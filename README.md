@@ -1,5 +1,7 @@
 # To-Do
 
+* Read paper "Efficient Lock-free Binary Search Trees"
+
 * find replacement for RSTM in java
 
 * Implement Efficient Lock-free Binary Search Tree
