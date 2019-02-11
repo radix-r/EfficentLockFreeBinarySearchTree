@@ -2,21 +2,23 @@
 
 * Read paper "Efficient Lock-free Binary Search Trees"
 
-* find replacement for RSTM in java
+* Find replacement for RSTM in java
 
 * Implement Efficient Lock-free Binary Search Tree
 
   * sub steps
+  * Cat 3 Remove() and Contains() - Ross
+  * Cat 1 + 2 Remove() and Add() - Chinh
 
 * Report
 
-  * progress  guarantee
-  * correctness condition
-  * synchronization  techniques
-  * advantages and disadvantages of this data structure compared to its alternatives
-  * improvements
-  * obstacles
+  * progress  guarantee - Ross
+  * correctness condition - Chinh
+  * synchronization  techniques - Ross
+  * advantages and disadvantages of this data structure compared to its alternatives - Chinh
+  * improvements - Ross
+  * obstacles - Chinh
 
-* Transactional Data Structure Implementation Using STM
+* Transactional Data Structure Implementation Using STM - Group Effor
 
-* Testing and Performance Evaluation
+* Testing and Performance Evaluation - Group Effort
