@@ -9,6 +9,11 @@
   * sub steps
   * Cat 3 Remove() and Contains() - Ross
   * Cat 1 + 2 Remove() and Add() - Chinh
+  * clean mark() - Chinh
+  * clean flag() - Chinh
+  * locate() - Ross
+  * tryflag() - Ross
+  * tryMark() - Ross
 
 * Report
 
