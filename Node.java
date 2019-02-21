@@ -1,29 +1,43 @@
-public class Node <T>{
+import java.util.concurrent.atomic.AtomicStampedReference;
 
+/*  BitWise Stamped
+    flagged, marked, threaded
+0    000
+1    001
+2    010
+3    011
+4    100
+5    101
+6    110
+7    111
+*/
 
-private T k;
+public class Node {
 
-//left=child[0]; right=child[1];
-private Node<T>[] child = new Node[2];
+    private int k;
 
-private Node<T> backLink;
-private Node<T> preLink;
+    //left=child[0]; right=child[1];
+    private AtomicStampedReference<Node>[] child = new AtomicStampedReference[2];
+    private AtomicStampedReference<Node> backLink;
+    private AtomicStampedReference<Node> preLink;
 
-Node(T key) {
-    this.k = key;
-}
+    Node(int key) {
+        this.k = key;
+    }
 
-public void setLeftChild(Node<T> node) {
-    this.child[0] = node;
-}
+    public void setLeftChild(Node leftChild, int bit) {
+        this.child[0].set(leftChild, bit);
+    }
 
-public void setRightChild(Node<T> node) {
-    this.child[1] = node;
-}
+    public void setRightChild(Node rightChild, int bit) {
+        this.child[1].set(rightChild, bit);
+    }
 
-//
-// // Global variable with the fixed value of members.
-// Node root[2] = {{−∞, {(&root[0], 0, 0, 1), (&root[1], 0, 0, 1)}, &root[1], null},
-// {∞, {(&root[0], 0, 0, 0), (null, 0, 0, 1)}, null, null}};
+    public void setBackLink(Node backLink, int bit) {
+        this.backLink.set(backLink, bit);
+    }
 
+    public void setPreLink(Node preLink, int bit) {
+        this.preLink.set(null, bit);
+    }
 }
