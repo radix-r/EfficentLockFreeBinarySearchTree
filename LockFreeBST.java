@@ -123,7 +123,7 @@ public class LockFreeBST  {
 
     }
 
-    public void CleanFlag(Node prev, Node curr, Node back, boolean isThread) {
+    public void CleanFlagged(Node prev, Node curr, Node back, boolean isThread) {
         if (isThread ) {
             // // Cleaning a flagged order-link
             while(true) {
@@ -197,7 +197,7 @@ public class LockFreeBST  {
         }
     }
 
-    public void CleanMark(Node curr, int markDir) {
+    public void CleanMarked(Node curr, int markDir) {
 
     }
 
@@ -207,15 +207,15 @@ public class LockFreeBST  {
         Node prev = root[0];
         Node curr = root[1];
 
-        // /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
-        //  nodechild[0] = (node, 0, 0, 1);
+        /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
         Node node = new Node(key);
+        node.setLeftChild(node, THREAD);
 
         while(true) {
 
             int dir = Locate(prev, curr, key);
 
-            //  if (dir = 2) then // key exists in the BST return false;
+            //  if (dir = 2) then key exists in the BST return false;
             if (dir == 2) {
                 return false;
             }
@@ -223,29 +223,50 @@ public class LockFreeBST  {
             else {
                 // Some temporary node R get the childs based on dir reference and all of the flag, mark, threaded bits
                 //  (R, ∗, ∗, ∗) = curr->child[dir];
+                int [] linkStamp = new int[1];
+                Node R = curr.getChild(dir, linkStamp);
+
                 // /* The located link is threaded. Set the right-link of the adding node to copy this value */
                 //  nodechild[1] = (R, 0, 0, 1);
-                node.setRightChild();
+                node.setRightChild(R, THREAD);
                 //  nodebackLink = curr;
-                node.setBackLink(curr);
+
+                node.setBackLink(curr, 0);
+
                 //  result = CAS(currchild[dir], (R, 0, 0, 1), (node, 0, 0, 0)); //  // Try inserting the new node.
-                boolean result = true;
+                // childCAS takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
+                // and performes atomic comparedAndSet
+                boolean result = curr.childCAS(dir, R, linkStamp[0], node, 0);
+
                 // if result then return true;
                 if (result) {
                     return true;
                 }
 
                 else {
-                    // /* If the CAS fails, check if the link has been marked, flagged or a new node has been inserted.
-                    //  If marked or glagged, first help cleaning. */
+                    /* If the CAS fails, check if the link has been marked, flagged or a new node has been inserted.
+                     If marked or flagged, first help cleaning. */
                     // (newR, f, m, t) = currchild[dir];
-                    // if (newR = R) then
-                    // newCurr = prev;
-                    // if m then CleanMarked(curr, dir);
-                    // else if f then
-                    // CleanFlagged(curr, R, prev, true);
-                    // curr = newCurr;
-                    // prev = newCurrbackLink
+                    int [] newLinkStamp = new int[1];
+                    Node newR = curr.getChild(dir, newLinkStamp);
+
+                    // compare references
+                    if (newR == R) {
+                        Node newCurr = prev;
+
+                        // Bitwise comparision xx
+                        if( newLinkStamp[0] == MARK ) {
+                            CleanMarked(curr, dir);
+                        }
+
+                        else if ( newLinkStamp[0] == FLAG ) {
+                            CleanFlagged(curr, R, prev, true);
+                        }
+
+                         curr = newCurr;
+                         prev = newCurr.getBackLink();
+                    }
+
                 }
             }
         }

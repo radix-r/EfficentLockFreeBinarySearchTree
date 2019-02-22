@@ -40,4 +40,20 @@ public class Node {
     public void setPreLink(Node preLink, int bit) {
         this.preLink.set(null, bit);
     }
+
+    // Returns the Node reference of left or right child based on dir, 0 = left,
+    // 1 = right. and also put the stamped value into linkStamp in one atomic step
+    public Node getChild(int dir, int[] linkStamp ) {
+        return this.child[dir].get(linkStamp);
+    }
+
+    // Takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
+    // and performes atomic comparedAndSet
+    public boolean childCAS(int dir, Node initialRef, int initialStamp, Node newRef, int newStamp) {
+        return this.child[dir].compareAndSet(initialRef, newRef, initialStamp, newStamp);
+    }
+
+    public Node getBackLink() {
+        return this.backLink.getReference();
+    }
 }
