@@ -1,33 +1,68 @@
-public class LockFreeBST <T> {
+import java.lang.Integer;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
-    private Node<T>[] root;
+
+/*  BitWise Stamped
+    flagged, marked, threaded
+0    000
+1    001
+2    010
+3    011
+4    100
+5    101
+6    110
+7    111
+*/
+
+
+public class LockFreeBST  {
+
+    private final int THREAD = 1;
+    private final int MARK = 2;
+    private final int FLAG = 4;
+
+    private Node[] root;
+    private Node rootMin;
+    private Node rootMax;
 
     // Declare infite global Nodes here for Contains (page 5 near bottom paragraph)
     // root[0] = -oo root[1] = oo
     // root[0] is the left child of root[1]
     LockFreeBST() {
-        T min; T max;
+        rootMin = new Node(Integer.MIN_VALUE);
+        rootMax = new Node(Integer.MAX_VALUE);
+
+        rootMin.setLeftChild(rootMin, THREAD);
+        rootMin.setRightChild(rootMax, THREAD);
+        rootMin.setBackLink(rootMax, 0);
+        rootMin.setPreLink(null, 0);
+
+
+        rootMax.setLeftChild(rootMin, 0);
+        rootMax.setRightChild(null, THREAD);
+        rootMax.setBackLink(null, 0);
+        rootMax.setPreLink(null, 0);
 
         root = new Node[2];
-        root[0] = new Node<T>(min); //temp
-        root[1] =  new Node<T>(max); //temp
+        root[0] = rootMin;
+        root[1] = rootMax;
     }
 
-    public int Locate(Node<T> prev, Node<T> curr, T key){
+    public int Locate(Node prev, Node curr, int key){
         return 0;
     }
 
-    public boolean Contains(T key) {
+    public boolean Contains(int key) {
         return false;
     }
 
-    public boolean Remove(T key) {
+    public boolean Remove(int key) {
 
         boolean result = false;
 
         /* Initialize the location variables as before. */
-        //  Node<T> prev = &root[1];
-        //  Node<T> curr = &root[0];
+        //  Node prev = &root[1];
+        //  Node curr = &root[0];
 
         //  int  dir = Locate(prev, curr, k− e);????????
 
@@ -46,7 +81,7 @@ public class LockFreeBST <T> {
         return result;
     }
 
-    public boolean TryFlag(Node<T> prev, Node<T> curr, Node<T> backLink, boolean inThread) {
+    public boolean TryFlag(Node prev, Node curr, Node backLink, boolean inThread) {
 
     //  while true do
     //  pDir = cmp(currk, prevk) & 1;
@@ -73,7 +108,7 @@ public class LockFreeBST <T> {
         return false;
     }
 
-    public void TryMark(Node<T> curr, int dir) {
+    public void TryMark(Node curr, int dir) {
     // while true do
     // back = currbackLink;
     // (next, f, m, t) = currchild[dir];
@@ -88,46 +123,120 @@ public class LockFreeBST <T> {
 
     }
 
-    public void CleanFlag(Node<T> prev, Node<T> curr, Node<T> backLink, boolean isThread) {
+    public void CleanFlagged(Node prev, Node curr, Node back, boolean isThread) {
+        if (isThread ) {
+            // // Cleaning a flagged order-link
+            while(true) {
+                // // To mark the right-child link
+                // (next, f, m, t) = currchild[1]; get the right childs address and assocaited values
+
+
+                // if (marked)  break;
+                // else if (flagged) {
+                    // // Help cleaning if right-child is flagged
+                    // if (back = next) then
+                        // // If back is getting deleted then move back.
+                        // back = back->backLink;
+
+                    // backNode = currbackLink;
+                    // CleanFlag(curr, next, backN ode, t);
+                    // if (back = next) {
+                        // pDir =cmp(prevk, backN odek);
+                        // prev = backchild[pDir];
+                    // }
+                //}
+
+                // else {
+                    // if (currpreLink 6= prev) then currpreLink = prev;
+                    // result = CAS(currchild[1], (next, 0, 0, t), (next, 0, 1, t)) ;
+                    // if result then break;
+                // }
+            }
+
+        // CleanMark(curr, 1);
+
+        }
+
+        else {
+            // (right, rF, rM, rT ) = currchild[1];
+            // if (rM ) then
+            // (lef t, lF, lM, lT ) = currchild[0];
+            // preN ode = currpreLink;
+            // if (lef t 6= preN ode) then // A category 3 node
+            // TryMark(curr, 0);
+            // CleanMark(curr, 0);
+            // else
+            // pDir =cmp(currk,prevk);
+            // if (lef t = curr) then
+            // CAS(prevchild[pDir], (curr , f, 0, 0), (right, 0, 0, rT ));
+            // if (!rT ) then CAS(rightbackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
+            // else
+            // CAS(preN odechild[1], (curr, 1, 0, 1), (right, 0, 0, rT ));
+            // if (!rT ) then CAS(rightbackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
+            // CAS(prevchild[pDir], (curr, 1, 0, 0), (preN ode, 0, 0, rT ));
+            // CAS(preN odebackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
+            // else if (rt and rF ) then
+            // // The node is moving to replace its successor
+            // delN ode = right;
+            // while true do
+            // parent = delN odebackLink;
+            // pDir =cmp(currk, prevk);
+            // (∗, pF, pM, pT ) = parentchild[pDir];
+            // if (pM ) then CleanMark(parent, pDir);
+            // else if (pF ) then break;
+            // else if (CAS(parentchild[pDir], (curr, 0, 0, 0), (curr, 1, 0, 0))) then
+            // break;
+            // backN ode = parentbackLink;
+            // CleanFlag(parent, curr, backN ode, true);
+            // // Try marking the child link.
+            // // Cleaning a flagged parent-link
+            // // The node is to be deleted itself
+            // // This is a category 1 or 2 node
+            // // A category 1 node
+            // // A category 2 node
+        }
+    }
+
+    public void CleanMarked(Node curr, int markDir) {
 
     }
 
-    public void CleanMark(Node<T> curr, int markDir) {
 
-    }
-
-
-    boolean Add(T key) {
+    boolean Add(int key) {
     //  prev = &root[1]; curr = &root[0];
-        Node<T> prev = root[0];
-        Node<T> curr = root[1];
+        Node prev = root[0];
+        Node curr = root[1];
 
-        // /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
-        //  nodechild[0] = (node, 0, 0, 1);
-        Node<T> node = new Node<T>(key);
+        /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
+        Node node = new Node(key);
+        node.setLeftChild(node, THREAD);
 
         while(true) {
 
             int dir = Locate(prev, curr, key);
 
-            //  if (dir = 2) then // key exists in the BST return false;
+            //  if (dir = 2) then key exists in the BST return false;
             if (dir == 2) {
                 return false;
             }
 
             else {
-                //  (R, ∗, ∗, ∗) = currchild[dir];
+                // Some temporary node R get the childs based on dir reference and all of the flag, mark, threaded bits
+                //  (R, ∗, ∗, ∗) = curr->child[dir];
+                int [] linkStamp = new int[1];
+                Node R = curr.getChild(dir, linkStamp);
 
                 // /* The located link is threaded. Set the right-link of the adding node to copy this value */
-
                 //  nodechild[1] = (R, 0, 0, 1);
-
+                node.setRightChild(R, THREAD);
                 //  nodebackLink = curr;
 
-                //  result = CAS(currchild[dir], (R, 0, 0, 1), (node, 0, 0, 0));
-                boolean result = true;
+                node.setBackLink(curr, 0);
 
-                //  // Try inserting the new node.
+                //  result = CAS(currchild[dir], (R, 0, 0, 1), (node, 0, 0, 0)); //  // Try inserting the new node.
+                // childCAS takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
+                // and performes atomic comparedAndSet
+                boolean result = curr.childCAS(dir, R, linkStamp[0], node, 0);
 
                 // if result then return true;
                 if (result) {
@@ -135,17 +244,29 @@ public class LockFreeBST <T> {
                 }
 
                 else {
-                    // /* If the CAS fails, check if the link has been marked, flagged or a new node has been inserted.
-                    //  If marked or
-                    // flagged, first help cleaning. */
+                    /* If the CAS fails, check if the link has been marked, flagged or a new node has been inserted.
+                     If marked or flagged, first help cleaning. */
                     // (newR, f, m, t) = currchild[dir];
-                    // if (newR = R) then
-                    // newCurr = prev;
-                    // if m then CleanMarked(curr, dir);
-                    // else if f then
-                    // CleanFlagged(curr, R, prev, true);
-                    // curr = newCurr;
-                    // prev = newCurrbackLink
+                    int [] newLinkStamp = new int[1];
+                    Node newR = curr.getChild(dir, newLinkStamp);
+
+                    // compare references
+                    if (newR == R) {
+                        Node newCurr = prev;
+
+                        // Bitwise comparision xx
+                        if( newLinkStamp[0] == MARK ) {
+                            CleanMarked(curr, dir);
+                        }
+
+                        else if ( newLinkStamp[0] == FLAG ) {
+                            CleanFlagged(curr, R, prev, true);
+                        }
+
+                         curr = newCurr;
+                         prev = newCurr.getBackLink();
+                    }
+
                 }
             }
         }
