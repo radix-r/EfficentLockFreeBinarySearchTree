@@ -1,0 +1,115 @@
+Efficient Lock-free Binary Search Trees Notes
+
+Tree and linked list equivalent
+
+Algorithm
+    threading of child links to indicate if if connected to pre(X) or suc(X)
+
+    
+    right child ptr: if null, is threaded and points to sucessor node.
+    left child ptr: if null, is threaded and points to its self
+
+    for each node 2 incoming and 2 outgoing pointers
+    
+    add() similar to single linked list
+    remove() similar to double linked list
+    
+    avoid retry from scratch. use backlink per node guaranteed to point to node present in tree.
+    
+    difficult to preform error free remove(). must modify many links
+    
+    3 node categories
+        based on origin of the threaded incoming link into the node, called order-link.
+        
+        Cat 1: order link emanates from self
+        
+        Cat 2: order link emanates from the left of the node
+        
+        Cat 3: order link emanates from a "distant" node in it's left sub tree
+        
+        name node where order link emanates, order node
+        
+    to remove
+        Cat 1: only incoming parent link needs to be modified to connect to node pointed to by right link
+        
+        Cat 2: parent link updated to connect to the node which the left link points to. order link modified to point to the node which the right link was pointing to. 
+
+        Cat 3: replaced by predecessor. predecessor's incoming and out going links are updated to be that of the removed node. parent link of predecessor is connected to the node which its left link was pointing before it was shifted. 
+        
+        before swaping pointers flag incoming pointers to node and its posible predecessor and mark outgoing pointers. don not mark or flag backlink.
+        
+        once link flaged or marked it can not be a point of injection of a new Add() or Remove(). 
+        
+    prelink to guarantee a single pointer travelling for recovery from failure due to concurrent modify operation. It connects a node to its order node before outgoing pointers are marked
+
+    flaging and marking preformed in definite order to avoid malformed structure of BST and ensure priorities between operations
+    
+    flag-mark order 
+        cat 1 and 2: 
+            1) flag incoming order link
+            2) set prelink
+            3) mark outgoing right link
+            4) flag incoming parent link
+            
+        cat 3: 
+            1) flag incoming order link
+            2) set prelink
+            3) mark outgoing right link
+            4) flag the parent link of incoming predecessor
+            5) flag incoming parent link
+            6) mark the outgoing left link
+            7) mark the outgoing left link of predecessor
+        
+    having preformed the flagging and marking, update the flagged links according to cat of node
+    
+    stopping criterion for traversal
+        condition 1: let K be search key and Kcurr be the ke of current node in search path. if K = Kcurr then stop. Else if the next link is a threaded left link then stop. Else, if the next link is a threaded right link and the node has key Knext then check if k < Knext. if true stop, else continue. 
+        
+    fine graned marking improves progress conditions
+        ex: remove of cat 2 node left link of predecessor is never marked or flagged therefore a concurrent injection of Add or Remove at the predecessor is possible
+        
+        
+Implementation
+    
+    need 3 bits from markable reference for:
+        1) threaded indicator
+        2) mark bit 
+        3) flag bit
+        
+    Node has 5 memory words.
+        1) key k
+        2) array[2] child containing 2 ptrs. child[0] := left(x), child[1] := right(x). markable
+        3) a backLink. not markable
+        4) a preLink. not markable
+    
+    3 stolen bits represented as (f,m,t). We will be using an int. 3 bits represents 0 to 7. bits set and unset using atomic compare and swap (CAS).
+    
+    global var Node[2] root
+        * -inf and inf stored in sentenal nodes. Can never be deleted
+        * root[0] left. root[1] right
+        
+    Locating a node
+    
+        contains(), add(), and remove() all need to locate x(Kprev) = Ki, x(Kcur)=Kj. 
+        
+        locate() used. Returns 0, 1 or 2
+        
+        if Kcur != k (k not found) then desired interval associated with outgoing threaded link from x(Kcur) in direction indicated by return value of locate(). 0 denotes left (less than), 1 denotes right (greater than)
+        
+        Traversal helps remove(). Traversal cleans nodes whose marked right-link it encounters during execution by calling cleanMark(). Functionality enabled using boolean vars as input to every set() operation which is then passed to locate(). 
+        
+        to preform contains(k)
+            1) start at location {x(inf),x(-inf)} represented by global sentinel vars
+            2) return value of locate. returns 2 (equal) if k present causing contains() to return true.  
+            
+    Remove operation
+    
+        to remove node corresponding to key k
+            starting at {x(inf), x(-inf)} licate link corresponding to key(k-epsilon)
+
+            given that locate() terminates at {x(Kprev), x(Kcur)} then scu(x(Kcur)) is the desired node to remove if k matches with its key
+        
+        
+        
+        
+    
