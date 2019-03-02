@@ -48,13 +48,163 @@ public class LockFreeBST  {
         root[1] = rootMax;
     }
 
-    public int Locate(Node prev, Node curr, int key){
-        return 0;
+    boolean Add(int key) {
+        //  prev = &root[1]; curr = &root[0];
+        Node prev = root[0];
+        Node curr = root[1];
+
+        /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
+        Node node = new Node(key);
+        node.setLeftChild(node, THREAD);
+
+        while(true) {
+
+            int dir = Locate(prev, curr, key);
+
+            //  if (dir = 2) then key exists in the BST return false;
+            if (dir == 2) {
+                return false;
+            }
+
+            else {
+                // Some temporary node R get the childs based on dir reference and all of the flag, mark, threaded bits
+                //  (R, ∗, ∗, ∗) = curr->child[dir];
+                int [] linkStamp = new int[1];
+                Node R = curr.getChild(dir, linkStamp);
+
+                // /* The located link is threaded. Set the right-link of the adding node to copy this value */
+                //  nodechild[1] = (R, 0, 0, 1);
+                node.setRightChild(R, THREAD);
+                //  nodebackLink = curr;
+
+                node.setBackLink(curr, 0);
+
+                //  result = CAS(currchild[dir], (R, 0, 0, 1), (node, 0, 0, 0)); //  // Try inserting the new node.
+                // childCAS takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
+                // and performes atomic comparedAndSet
+                boolean result = curr.childCAS(dir, R, linkStamp[0], node, 0);
+
+                // if result then return true;
+                if (result) {
+                    return true;
+                }
+
+                else {
+                    /* If the CAS fails, check if the link has been marked, flagged or a new node has been inserted.
+                     If marked or flagged, first help cleaning. */
+                    // (newR, f, m, t) = currchild[dir];
+                    int [] newLinkStamp = new int[1];
+                    Node newR = curr.getChild(dir, newLinkStamp);
+
+                    // compare references
+                    if (newR == R) {
+                        Node newCurr = prev;
+
+                        // Bitwise comparision xx
+                        if( newLinkStamp[0] == MARK ) {
+                            CleanMarked(curr, dir);
+                        }
+
+                        else if ( newLinkStamp[0] == FLAG ) {
+                            CleanFlagged(curr, R, prev, true);
+                        }
+
+                        curr = newCurr;
+                        prev = newCurr.getBackLink();
+                    }
+
+                }
+            }
+        }
+    }
+
+    public void CleanFlagged(Node prev, Node curr, Node back, boolean isThread) {
+        if (isThread ) {
+            // // Cleaning a flagged order-link
+            while(true) {
+                // // To mark the right-child link
+                // (next, f, m, t) = currchild[1]; get the right childs address and assocaited values
+
+
+                // if (marked)  break;
+                // else if (flagged) {
+                // // Help cleaning if right-child is flagged
+                // if (back = next) then
+                // // If back is getting deleted then move back.
+                // back = back->backLink;
+
+                // backNode = currbackLink;
+                // CleanFlag(curr, next, backN ode, t);
+                // if (back = next) {
+                // pDir =cmp(prevk, backN odek);
+                // prev = backchild[pDir];
+                // }
+                //}
+
+                // else {
+                // if (currpreLink 6= prev) then currpreLink = prev;
+                // result = CAS(currchild[1], (next, 0, 0, t), (next, 0, 1, t)) ;
+                // if result then break;
+                // }
+            }
+
+            // CleanMark(curr, 1);
+
+        }
+
+        else {
+            // (right, rF, rM, rT ) = currchild[1];
+            // if (rM ) then
+            // (lef t, lF, lM, lT ) = currchild[0];
+            // preN ode = currpreLink;
+            // if (lef t 6= preN ode) then // A category 3 node
+            // TryMark(curr, 0);
+            // CleanMark(curr, 0);
+            // else
+            // pDir =cmp(currk,prevk);
+            // if (lef t = curr) then
+            // CAS(prevchild[pDir], (curr , f, 0, 0), (right, 0, 0, rT ));
+            // if (!rT ) then CAS(rightbackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
+            // else
+            // CAS(preN odechild[1], (curr, 1, 0, 1), (right, 0, 0, rT ));
+            // if (!rT ) then CAS(rightbackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
+            // CAS(prevchild[pDir], (curr, 1, 0, 0), (preN ode, 0, 0, rT ));
+            // CAS(preN odebackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
+            // else if (rt and rF ) then
+            // // The node is moving to replace its successor
+            // delN ode = right;
+            // while true do
+            // parent = delN odebackLink;
+            // pDir =cmp(currk, prevk);
+            // (∗, pF, pM, pT ) = parentchild[pDir];
+            // if (pM ) then CleanMark(parent, pDir);
+            // else if (pF ) then break;
+            // else if (CAS(parentchild[pDir], (curr, 0, 0, 0), (curr, 1, 0, 0))) then
+            // break;
+            // backN ode = parentbackLink;
+            // CleanFlag(parent, curr, backN ode, true);
+            // // Try marking the child link.
+            // // Cleaning a flagged parent-link
+            // // The node is to be deleted itself
+            // // This is a category 1 or 2 node
+            // // A category 1 node
+            // // A category 2 node
+        }
+    }
+
+    public void CleanMarked(Node curr, int markDir) {
+
     }
 
     public boolean Contains(int key) {
         return false;
     }
+
+    public int Locate(Node prev, Node curr, int key){
+        return 0;
+    }
+
+
 
     public boolean Remove(int key) {
 
@@ -123,153 +273,9 @@ public class LockFreeBST  {
 
     }
 
-    public void CleanFlagged(Node prev, Node curr, Node back, boolean isThread) {
-        if (isThread ) {
-            // // Cleaning a flagged order-link
-            while(true) {
-                // // To mark the right-child link
-                // (next, f, m, t) = currchild[1]; get the right childs address and assocaited values
 
 
-                // if (marked)  break;
-                // else if (flagged) {
-                    // // Help cleaning if right-child is flagged
-                    // if (back = next) then
-                        // // If back is getting deleted then move back.
-                        // back = back->backLink;
-
-                    // backNode = currbackLink;
-                    // CleanFlag(curr, next, backN ode, t);
-                    // if (back = next) {
-                        // pDir =cmp(prevk, backN odek);
-                        // prev = backchild[pDir];
-                    // }
-                //}
-
-                // else {
-                    // if (currpreLink 6= prev) then currpreLink = prev;
-                    // result = CAS(currchild[1], (next, 0, 0, t), (next, 0, 1, t)) ;
-                    // if result then break;
-                // }
-            }
-
-        // CleanMark(curr, 1);
-
-        }
-
-        else {
-            // (right, rF, rM, rT ) = currchild[1];
-            // if (rM ) then
-            // (lef t, lF, lM, lT ) = currchild[0];
-            // preN ode = currpreLink;
-            // if (lef t 6= preN ode) then // A category 3 node
-            // TryMark(curr, 0);
-            // CleanMark(curr, 0);
-            // else
-            // pDir =cmp(currk,prevk);
-            // if (lef t = curr) then
-            // CAS(prevchild[pDir], (curr , f, 0, 0), (right, 0, 0, rT ));
-            // if (!rT ) then CAS(rightbackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
-            // else
-            // CAS(preN odechild[1], (curr, 1, 0, 1), (right, 0, 0, rT ));
-            // if (!rT ) then CAS(rightbackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
-            // CAS(prevchild[pDir], (curr, 1, 0, 0), (preN ode, 0, 0, rT ));
-            // CAS(preN odebackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
-            // else if (rt and rF ) then
-            // // The node is moving to replace its successor
-            // delN ode = right;
-            // while true do
-            // parent = delN odebackLink;
-            // pDir =cmp(currk, prevk);
-            // (∗, pF, pM, pT ) = parentchild[pDir];
-            // if (pM ) then CleanMark(parent, pDir);
-            // else if (pF ) then break;
-            // else if (CAS(parentchild[pDir], (curr, 0, 0, 0), (curr, 1, 0, 0))) then
-            // break;
-            // backN ode = parentbackLink;
-            // CleanFlag(parent, curr, backN ode, true);
-            // // Try marking the child link.
-            // // Cleaning a flagged parent-link
-            // // The node is to be deleted itself
-            // // This is a category 1 or 2 node
-            // // A category 1 node
-            // // A category 2 node
-        }
-    }
-
-    public void CleanMarked(Node curr, int markDir) {
-
-    }
 
 
-    boolean Add(int key) {
-    //  prev = &root[1]; curr = &root[0];
-        Node prev = root[0];
-        Node curr = root[1];
-
-        /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
-        Node node = new Node(key);
-        node.setLeftChild(node, THREAD);
-
-        while(true) {
-
-            int dir = Locate(prev, curr, key);
-
-            //  if (dir = 2) then key exists in the BST return false;
-            if (dir == 2) {
-                return false;
-            }
-
-            else {
-                // Some temporary node R get the childs based on dir reference and all of the flag, mark, threaded bits
-                //  (R, ∗, ∗, ∗) = curr->child[dir];
-                int [] linkStamp = new int[1];
-                Node R = curr.getChild(dir, linkStamp);
-
-                // /* The located link is threaded. Set the right-link of the adding node to copy this value */
-                //  nodechild[1] = (R, 0, 0, 1);
-                node.setRightChild(R, THREAD);
-                //  nodebackLink = curr;
-
-                node.setBackLink(curr, 0);
-
-                //  result = CAS(currchild[dir], (R, 0, 0, 1), (node, 0, 0, 0)); //  // Try inserting the new node.
-                // childCAS takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
-                // and performes atomic comparedAndSet
-                boolean result = curr.childCAS(dir, R, linkStamp[0], node, 0);
-
-                // if result then return true;
-                if (result) {
-                    return true;
-                }
-
-                else {
-                    /* If the CAS fails, check if the link has been marked, flagged or a new node has been inserted.
-                     If marked or flagged, first help cleaning. */
-                    // (newR, f, m, t) = currchild[dir];
-                    int [] newLinkStamp = new int[1];
-                    Node newR = curr.getChild(dir, newLinkStamp);
-
-                    // compare references
-                    if (newR == R) {
-                        Node newCurr = prev;
-
-                        // Bitwise comparision xx
-                        if( newLinkStamp[0] == MARK ) {
-                            CleanMarked(curr, dir);
-                        }
-
-                        else if ( newLinkStamp[0] == FLAG ) {
-                            CleanFlagged(curr, R, prev, true);
-                        }
-
-                         curr = newCurr;
-                         prev = newCurr.getBackLink();
-                    }
-
-                }
-            }
-        }
-    }
 
 }

@@ -34,15 +34,15 @@ Algorithm
         
         Cat 2: parent link updated to connect to the node which the left link points to. order link modified to point to the node which the right link was pointing to. 
 
-        Cat 3: replaced by predecessor. predecessor's incoming and out going links are updated to be that of the removed node. parent link of predecessor is connected to the node which its left link was pointing before it was shifted. 
+        Cat 3: replaced by predecessor (right most elem in left subtree). predecessor's incoming and out going links are updated to be that of the removed node. parent link of predecessor is connected to the node which its left link was pointing before it was shifted. 
         
-        before swaping pointers flag incoming pointers to node and its posible predecessor and mark outgoing pointers. don not mark or flag backlink.
+        before swapping pointers flag incoming pointers to node and its possible predecessor and mark outgoing pointers. don not mark or flag backlink.
         
-        once link flaged or marked it can not be a point of injection of a new Add() or Remove(). 
+        once link flagged or marked it can not be a point of injection of a new Add() or Remove(). 
         
-    prelink to guarantee a single pointer travelling for recovery from failure due to concurrent modify operation. It connects a node to its order node before outgoing pointers are marked
+    prelink to guarantee a single pointer traveling for recovery from failure due to concurrent modify operation. It connects a node to its order node before outgoing pointers are marked
 
-    flaging and marking preformed in definite order to avoid malformed structure of BST and ensure priorities between operations
+    flagging and marking preformed in definite order to avoid malformed structure of BST and ensure priorities between operations
     
     flag-mark order 
         cat 1 and 2: 
