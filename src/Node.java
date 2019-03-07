@@ -14,15 +14,26 @@ import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class Node {
 
-    private int k;
+    public int k;
 
     //left=child[0]; right=child[1];
-    private AtomicStampedReference<Node>[] child = new AtomicStampedReference[2];
+    private AtomicStampedReference<Node>[] child;
     private AtomicStampedReference<Node> backLink;
     private AtomicStampedReference<Node> preLink;
 
     Node(int key) {
         this.k = key;
+        child = new AtomicStampedReference[2];
+        child[0] = new AtomicStampedReference<>(null,0);
+        child[1] = new AtomicStampedReference<>(null,0);
+        backLink = new AtomicStampedReference<>(null,0);
+        preLink = new AtomicStampedReference<>(null,0);
+    }
+
+    // Takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
+    // and performes atomic comparedAndSet
+    public boolean childCAS(int dir, Node initialRef, int initialStamp, Node newRef, int newStamp) {
+        return this.child[dir].compareAndSet(initialRef, newRef, initialStamp, newStamp);
     }
 
     public void setLeftChild(Node leftChild, int bit) {
@@ -38,7 +49,12 @@ public class Node {
     }
 
     public void setPreLink(Node preLink, int bit) {
-        this.preLink.set(null, bit);
+        this.preLink.set(preLink, bit);
+    }
+
+
+    public Node getBackLink() {
+        return this.backLink.getReference();
     }
 
     // Returns the Node reference of left or right child based on dir, 0 = left,
@@ -47,13 +63,10 @@ public class Node {
         return this.child[dir].get(linkStamp);
     }
 
-    // Takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
-    // and performes atomic comparedAndSet
-    public boolean childCAS(int dir, Node initialRef, int initialStamp, Node newRef, int newStamp) {
-        return this.child[dir].compareAndSet(initialRef, newRef, initialStamp, newStamp);
+    public Node getPreLink(){
+        return this.preLink.getReference();
     }
 
-    public Node getBackLink() {
-        return this.backLink.getReference();
-    }
+
+
 }
