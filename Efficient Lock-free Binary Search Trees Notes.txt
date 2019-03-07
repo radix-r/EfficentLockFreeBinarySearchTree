@@ -30,6 +30,8 @@ Algorithm
         name node where order link emanates, order node
         
     to remove
+        Locate(key)  
+    
         Cat 1: only incoming parent link needs to be modified to connect to node pointed to by right link
         
         Cat 2: parent link updated to connect to the node which the left link points to. order link modified to point to the node which the right link was pointing to. 
@@ -105,7 +107,7 @@ Implementation
     Remove operation
     
         to remove node corresponding to key k
-            starting at {x(inf), x(-inf)} licate link corresponding to key(k-epsilon)
+            starting at {x(inf), x(-inf)} locate link corresponding to key(k-epsilon)
 
             given that locate() terminates at {x(Kprev), x(Kcur)} then scu(x(Kcur)) is the desired node to remove if k matches with its key
         
