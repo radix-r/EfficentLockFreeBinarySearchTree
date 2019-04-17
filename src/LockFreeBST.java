@@ -82,6 +82,8 @@ public class LockFreeBST  {
                 //  result = CAS(currchild[dir], (R, 0, 0, 1), (node, 0, 0, 0)); //  // Try inserting the new node.
                 // childCAS takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
                 // and performes atomic comparedAndSet
+                // If the reference of the curr child pointer was modified before the execution of this CAS then that means
+                // another thread must have added another node or a remove marked the threaded link
                 boolean result = curr.childCAS(dir, R, linkStamp[0], node, 0);
 
                 // if result then return true;
