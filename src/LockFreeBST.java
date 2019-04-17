@@ -1,5 +1,4 @@
 import java.lang.Integer;
-import java.util.concurrent.atomic.AtomicStampedReference;
 
 
 /*  BitWise Stamped
@@ -59,7 +58,7 @@ public class LockFreeBST  {
 
         while(true) {
 
-            int dir = Locate(prev, curr, key);
+            int dir = locate(prev, curr, key);
 
             //  if (dir = 2) then key exists in the BST return false;
             if (dir == 2) {
@@ -104,11 +103,11 @@ public class LockFreeBST  {
 
                         // Bitwise comparision xx
                         if( newLinkStamp[0] == MARK ) {
-                            CleanMarked(curr, dir);
+                            cleanMarked(curr, dir);
                         }
 
                         else if ( newLinkStamp[0] == FLAG ) {
-                            CleanFlagged(curr, R, prev, true);
+                            cleanFlagged(curr, R, prev, true);
                         }
 
                         curr = newCurr;
@@ -120,7 +119,7 @@ public class LockFreeBST  {
         }
     }
 
-    public void CleanFlagged(Node prev, Node curr, Node back, boolean isThread) {
+    public void cleanFlagged(Node prev, Node curr, Node back, boolean isThread) {
         if (isThread ) {
             // // Cleaning a flagged order-link
             while(true) {
@@ -160,7 +159,7 @@ public class LockFreeBST  {
             // (lef t, lF, lM, lT ) = currchild[0];
             // preN ode = currpreLink;
             // if (lef t 6= preN ode) then // A category 3 node
-            // TryMark(curr, 0);
+            // tryMark(curr, 0);
             // CleanMark(curr, 0);
             // else
             // pDir =cmp(currk,prevk);
@@ -194,21 +193,118 @@ public class LockFreeBST  {
         }
     }
 
-    public void CleanMarked(Node curr, int markDir) {
+    public void cleanMarked(Node curr, int markDir) {
+        int[] lStamp = new int[1];
+        Node left = curr.getChild(0,lStamp);
 
+        int[] rStamp = new int[1];
+        Node right = curr.getChild(1,rStamp);
+
+        if (markDir == 1){
+            /* the node is getting itself. if it is category 1 or 2 node, flag the incoming parent link; if it is a category 3
+                node, flag the incoming parent link of its predecessor*/
+
+            while ( true ){
+                Node preNode = curr.getBackLink();
+                if (preNode.equals(left)){
+                    Node parent = curr.getBackLink();
+                    // get which direction the child is
+                    int pDir;
+                    if (parent.getChild(0, new int[1]).equals(curr)){
+                        pDir = 0;
+                    } else {
+                        pDir=1;
+                    }
+
+
+
+                    Node back = parent.getBackLink();
+                    tryFlag(parent,curr,back,true);
+                    if (parent.getChild(pDir,new int[1]).equals(curr)){
+                        cleanFlagged(parent,curr,back,true);
+                        break;
+                    }
+                    // pick up at line 132 in paper
+
+                }
+            }
+        }
     }
 
+    /**
+     * comparison to map results to indexes
+     * 2 := equal, 1:= greater than, 0 := less than
+     * */
+    private int cmp(int i, int j){
+        int dir = Integer.compare(i,j);
+
+        // remap dir to indexes
+        switch (dir){
+            case -1:
+                dir = 0;
+                break;
+            case 0:
+                dir = 2;
+                break;
+        }
+        return dir;
+    }
     public boolean Contains(int key) {
         return false;
     }
 
-    public int Locate(Node prev, Node curr, int key){
-        return 0;
+    /**
+     *
+     * */
+    public int locate(Node prev, Node curr, int key){
+        while (true){
+            int dir = cmp(key,curr.k);
+
+            if (dir == 2){
+                // key found
+                return dir;
+            }
+            else{
+                int[] nextStamp = new int[1];
+                Node next = curr.getChild(dir,nextStamp);
+
+                int m = nextStamp[0] & MARK;
+                int t = nextStamp[0] & THREAD;
+
+
+                if (m == MARK && dir == 1){
+                    // remove the node?
+                    Node newPrev = prev.getBackLink();
+                    cleanMarked(curr,dir);
+                    prev= newPrev;
+                    int pDir = cmp(key,prev.k);
+                    int[] s = new int[1];
+                    curr = prev.getChild(pDir,s);
+                    continue;
+                }
+                if(t == THREAD){
+                    // check stoping criterion
+                    int nextE = curr.k;
+                    if (dir == 0 || key < nextE){
+                        return dir;
+                    }
+                    else{
+                        prev = curr;
+                        curr = next;
+                    }
+                }
+
+
+            }
+        }
+
+
+
     }
 
 
 
-    public boolean Remove(int key) {
+    public boolean remove(int key) {
 
         boolean result = false;
 
@@ -216,7 +312,7 @@ public class LockFreeBST  {
         //  Node prev = &root[1];
         //  Node curr = &root[0];
 
-        //  int  dir = Locate(prev, curr, k− e);????????
+        //  int  dir = locate(prev, curr, k− e);????????
 
         //  (next, f, ∗, t) = currchild[dir];
 
@@ -225,7 +321,7 @@ public class LockFreeBST  {
         //  else
 
         // // flag the order-link
-        // result = TryFlag(curr, next, prev, true);
+        // result = tryFlag(curr, next, prev, true);
         // if (prevchild[dir].ref = curr) then
         // CleanFlag(curr, next, prev, true);
 
@@ -233,7 +329,7 @@ public class LockFreeBST  {
         return result;
     }
 
-    public boolean TryFlag(Node prev, Node curr, Node backLink, boolean inThread) {
+    public boolean tryFlag(Node prev, Node curr, Node backLink, boolean inThread) {
 
     //  while true do
     //  pDir = cmp(currk, prevk) & 1;
@@ -249,10 +345,10 @@ public class LockFreeBST  {
     //  if (newR = curr) then
     //  if f then return false;
     //  else if m then
-    //  CleanMarked(prev, pDir);
+    //  cleanMarked(prev, pDir);
     // prev = back;
     // pDir =cmp(currk, prevk);
-    // newCurr = (prevchild[newP Dir])·ref ; Locate(prev, newCurr, currk);
+    // newCurr = (prevchild[newP Dir])·ref ; locate(prev, newCurr, currk);
     // if (newCurr 6=curr ) then
     // return false;
     //  back = prevbackLink;
@@ -260,7 +356,7 @@ public class LockFreeBST  {
         return false;
     }
 
-    public void TryMark(Node curr, int dir) {
+    public void tryMark(Node curr, int dir) {
     // while true do
     // back = currbackLink;
     // (next, f, m, t) = currchild[dir];
