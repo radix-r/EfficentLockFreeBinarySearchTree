@@ -434,7 +434,7 @@ public class LockFreeBST  {
                 // /* The CAS fails, check if the link has been marked, flagged or the curr node got deleted. If flagged, return false; if
                 // marked, first clean it; else just proceed */
                 int [] newRStamp = new int[1];
-                Node newR = prev.getChild(pDir, newRStamp).getReference();
+                Node newR = prev.getChild(pDir, newRStamp);
 
                  if (newR == curr) {
                     if( (newRStamp[0]&FLAG) == FLAG ) return false;
@@ -446,12 +446,13 @@ public class LockFreeBST  {
                     prev = back;
                     pDir = cmp(curr.k, prev.k);
 
-                    Node newCurr = prev.getChild(pDir).getReference();
+
+                    Node newCurr = prev.getChild(pDir,new int[1]);
                     locate(prev, newCurr, curr.k);
 
                     if (newCurr != curr ) return false;
 
-                    back = prev.getBackLink().getReference();
+                    back = prev.getBackLink(new int[1]);
                  }
             }
         }
@@ -459,9 +460,10 @@ public class LockFreeBST  {
 
     public void tryMark(Node curr, int dir) {
         while(true) {
-            Node back = curr.getBackLink().getReference();
+            int[] currBackStamp = new int[1];
+            Node back = curr.getBackLink(currBackStamp);
             int[] nextStamp = new int[1];
-            Node next = curr.getChild(dir, nextStamp).getReference();
+            Node next = curr.getChild(dir, nextStamp);
 
             if ((nextStamp[0]&MARK) == MARK) break;
 
