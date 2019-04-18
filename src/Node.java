@@ -48,13 +48,17 @@ public class Node {
         this.backLink.set(backLink, bit);
     }
 
+    public boolean casBacklink(Node initialRef, int initialStamp, Node newRef, int newStamp){
+        return this.backLink.compareAndSet(initialRef,newRef,initialStamp,newStamp);
+    }
+
     public void setPreLink(Node preLink, int bit) {
         this.preLink.set(preLink, bit);
     }
 
 
-    public AtomicStampedReference<Node> getBackLink() {
-        return this.backLink;
+    public Node getBackLink(int[] stampHolder) {
+        return this.backLink.get(stampHolder);
     }
 
 
@@ -62,10 +66,10 @@ public class Node {
     /**
      * Returns parent and puts direction that this node is 0 for right 1 for left in pDir[0]
      * */
-    public Node getBackLink(int[] pDir) {
+    public Node getBackLink(int[] stampHolder,int[] pDir) {
         Node parent = this.backLink.getReference();
 
-        int [] stampHolder = new int[1];
+        //int [] stampHolder = new int[1];
         for(int i = 0; i<2;i++){
             if(parent.getChild(i,stampHolder) == this){
                 pDir[0]=i;

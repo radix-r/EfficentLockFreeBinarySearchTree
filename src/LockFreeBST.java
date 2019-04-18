@@ -113,7 +113,7 @@ public class LockFreeBST  {
                         }
 
                         curr = newCurr;
-                        prev = newCurr.getBackLink().getReference();
+                        prev = newCurr.getBackLink(new int[1]);
                     }
 
                 }
@@ -211,7 +211,7 @@ public class LockFreeBST  {
                 int[] preStamp = new int[1];
                 Node preNode = curr.getPreLink(preStamp);
                 if (preNode.equals(left)){
-                    Node parent = curr.getBackLink().getReference();
+                    Node parent = curr.getBackLink(new int[1]);
                     // get which direction the child is
                     int pDir;
                     if (parent.getChild(0, new int[1]).equals(curr)){
@@ -222,7 +222,7 @@ public class LockFreeBST  {
 
 
 
-                    Node back = parent.getBackLink().getReference();
+                    Node back = parent.getBackLink(new int[1]);
                     tryFlag(parent,curr,back,true);
                     if (parent.getChild(pDir,new int[1]).equals(curr)){
                         cleanFlagged(parent,curr,back,true);
@@ -234,11 +234,14 @@ public class LockFreeBST  {
                     // Cat 3 node
                     // get parent
                     int[] pDir = new int[1];
-                    Node parent = curr.getBackLink(pDir);
-                    Node preParent = preNode.getBackLink().getReference();
+                    int[] curBackStamp = new int[1];
+                    Node parent = curr.getBackLink(curBackStamp,pDir);
+                    int[] preBackStamp = new int[1];
+                    Node preParent = preNode.getBackLink(preBackStamp);
                     int[] linkStamp = new int[1];
                     preParent.getChild(1,linkStamp);
-                    Node backNode = preParent.getBackLink().getReference();
+                    int[] preParBackStamp = new int[1];
+                    Node backNode = preParent.getBackLink(preParBackStamp);
                     // check if link marked
                     if((linkStamp[0]&MARK) == MARK){
                         // if marked clean
@@ -268,7 +271,7 @@ public class LockFreeBST  {
                 // move to replace successor. Change links accordingly
                 Node delNode = right;
                 // parent of node to delete ?
-                Node delNodePa = delNode.getBackLink().getReference();
+                Node delNodePa = delNode.getBackLink(new int[1]);
                 int[] currDir = new int[1];
                 Node preParent = curr.getBackLink(currDir);
                 int pDir = cmp(delNode.k,delNodePa.k);
@@ -287,20 +290,20 @@ public class LockFreeBST  {
                 preParent.childCAS(1,curr,currStamp[0]&FLAG,left,lStamp[0]&(FLAG+THREAD));
 
                 if((lStamp[0]&THREAD)==0){
-                    left.getBackLink().compareAndSet(curr,preParent,0,0);
+                    left.casBacklink(curr,0,preParent,0);
                 }
 
                 curr.childCAS(0,left,(MARK+(lStamp[0]&THREAD)), delNode,0);
 
-                delNode.getBackLink().compareAndSet(delNode,curr,0,0);
+                delNode.casBacklink(delNode,0,curr,0);
 
                 curr.childCAS(1,right,FLAG+THREAD,delNodeR,delNodeRStamp[0]&THREAD);
 
                 if((delNodeRStamp[0]&THREAD) != THREAD){
-                    delNodeR.getBackLink().compareAndSet(delNode,curr,0,0);
+                    delNodeR.casBacklink(delNode,0,curr,0);
                 }
                 delNodePa.childCAS(pDir,delNode,FLAG,curr,0);
-                curr.getBackLink().compareAndSet(preParent,delNodePa,0,0);
+                curr.casBacklink(preParent,0,delNodePa,0);
             }
         }
     }
@@ -356,7 +359,7 @@ public class LockFreeBST  {
 
                 if (m == MARK && dir == 1){
                     // remove the node?
-                    Node newPrev = prev.getBackLink().getReference();
+                    Node newPrev = prev.getBackLink(new int[1]);
                     cleanMarked(curr,dir);
                     prev= newPrev;
                     int pDir = cmp(key,prev.k);
