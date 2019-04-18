@@ -127,7 +127,7 @@ public class LockFreeBST  {
             while(true) {
                 // To mark the right-child link
                 int [] linkStamp = new int[1];
-                Node next = curr.getChild(1, linkStamp).getReference();
+                Node next = curr.getChild(1, linkStamp);
 
 
                 if ( (linkStamp[0]&MARK) == MARK)  break;
@@ -136,20 +136,20 @@ public class LockFreeBST  {
                     // Help cleaning if right-child is flagge
                     if (back == next) {
                         // If back is getting deleted then move back.
-                        back = back.getBackLink().getReference();
+                        back = back.getBackLink(new int[1]);
                     }
 
-                    Node backNode = curr.getBackLink().getReference();
+                    Node backNode = curr.getBackLink(new int[1]);
                     cleanFlagged(curr, next, backNode, ((linkStamp[0]&THREAD) == THREAD) );
 
                     if (back == next) {
                         int pDir = cmp(prev.k, backNode.k);
-                        prev = back.getChild(pDir).getReference();
+                        prev = back.getChild(pDir, new int[1]);
                     }
                 }
 
                 else {
-                    if (curr.getPreLink().getReference() != prev) curr.setPreLink(prev, 0);
+                    if (curr.getPreLink(new int[1]) != prev) curr.setPreLink(prev, 0); // I Worry about setting stamp to 0
                     // Try marking the child link.
                     boolean result = curr.childCAS(1, next, linkStamp[0], next, linkStamp[0]+MARK);
                     if(result) break;
@@ -164,14 +164,14 @@ public class LockFreeBST  {
             // Cleaning a flagged parent-link
             int[] rightStamp = new int[1];
             int[] leftStamp = new int[1];
-            Node right = curr.getChild(1, rightStamp).getReference();
+            Node right = curr.getChild(1, rightStamp);
             Node left;
             Node preNode;
 
             // The node is to be deleted itself
             if ((rightStamp[0]&MARK) == MARK ) {
-                left = curr.getChild(0, leftStamp).getReference();
-                preNode = curr.getPreLink().getReference();
+                left = curr.getChild(0, leftStamp);
+                preNode = curr.getPreLink(new int[1]);
 
                 // A category 3 node
                  if (left != preNode){
@@ -186,15 +186,15 @@ public class LockFreeBST  {
                      // A category 1 node
                      if (left == curr) {
                          prev.childCAS(pDir, curr, FLAG, right, rightStamp[0]&THREAD);
-                         if( (rightStamp[0]&THREAD) != THREAD) right.backLinkCAS(curr, 0, prev, 0);
+                         if( (rightStamp[0]&THREAD) != THREAD) right.casBacklink(curr, 0, prev, 0);
                      }
 
                     // A category 2 node
                      else {
                          preNode.childCAS(1, curr, FLAG+THREAD, right, rightStamp[0]&THREAD);
-                         if((rightStamp[0]&THREAD) != THREAD) right.backLinkCAS(curr, 0, prev, 0);
+                         if((rightStamp[0]&THREAD) != THREAD) right.casBacklink(curr, 0, prev, 0);
                          prev.childCAS(pDir, curr, FLAG, preNode, rightStamp[0]&THREAD);
-                         preNode.backLinkCAS(curr, 0, prev, 0);
+                         preNode.casBacklink(curr, 0, prev, 0);
                      }
 
                 }
@@ -207,10 +207,10 @@ public class LockFreeBST  {
 
                 while(true) {
                     int[] parentStamp = new int[1];
-                    parent = delNode.getBackLink().getReference();
+                    parent = delNode.getBackLink(new int[1]);
                     int pDir = cmp(curr.k, prev.k);
 
-                    Node temp = parent.getChild(pDir, parentStamp).getReference();
+                    Node temp = parent.getChild(pDir, parentStamp);
 
                     if ( (parentStamp[0]&MARK) == MARK) cleanMarked(parent, pDir);
 
@@ -219,7 +219,7 @@ public class LockFreeBST  {
                     else if (parent.childCAS(pDir, curr, 0, curr, FLAG)) break;
                 }
 
-                Node backNode = parent.getBackLink().getReference();
+                Node backNode = parent.getBackLink(new int[1]);
                 cleanFlagged(parent, curr, backNode, true);
             }
         }
