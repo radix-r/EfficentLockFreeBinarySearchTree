@@ -122,79 +122,108 @@ public class LockFreeBST  {
     }
 
     public void cleanFlagged(Node prev, Node curr, Node back, boolean isThread) {
-        if (isThread ) {
+        if (isThread) {
             // // Cleaning a flagged order-link
             while(true) {
-                // // To mark the right-child link
-                // (next, f, m, t) = currchild[1]; get the right childs address and assocaited values
-                int[] nextStamp = new int[1];
-                Node next = curr.getChild(1,nextStamp);
+                // To mark the right-child link
+                int [] linkStamp = new int[1];
+                Node next = curr.getChild(1, linkStamp).getReference();
 
-                // if (marked)  break;
-                // else if (flagged) {
-                // // Help cleaning if right-child is flagged
-                // if (back = next) then
-                // // If back is getting deleted then move back.
-                // back = back->backLink;
 
-                // backNode = currbackLink;
-                // CleanFlag(curr, next, backN ode, t);
-                // if (back = next) {
-                // pDir =cmp(prevk, backN odek);
-                // prev = backchild[pDir];
-                // }
-                //}
+                if ( (linkStamp[0]&MARK) == MARK)  break;
 
-                // else {
-                // if (currpreLink 6= prev) then currpreLink = prev;
-                // result = CAS(currchild[1], (next, 0, 0, t), (next, 0, 1, t)) ;
-                // if result then break;
-                // }
+                else if ( (linkStamp[0]&FLAG) == FLAG) {
+                    // Help cleaning if right-child is flagge
+                    if (back == next) {
+                        // If back is getting deleted then move back.
+                        back = back.getBackLink().getReference();
+                    }
+
+                    Node backNode = curr.getBackLink().getReference();
+                    cleanFlagged(curr, next, backNode, ((linkStamp[0]&THREAD) == THREAD) );
+
+                    if (back == next) {
+                        int pDir = cmp(prev.k, backNode.k);
+                        prev = back.getChild(pDir).getReference();
+                    }
+                }
+
+                else {
+                    if (curr.getPreLink().getReference() != prev) curr.setPreLink(prev, 0);
+                    // Try marking the child link.
+                    boolean result = curr.childCAS(1, next, linkStamp[0], next, linkStamp[0]+MARK);
+                    if(result) break;
+                }
             }
 
-            // CleanMark(curr, 1);
+            cleanMarked(curr, 1);
 
         }
 
         else {
-            // (right, rF, rM, rT ) = currchild[1];
-            // if (rM ) then
-            // (lef t, lF, lM, lT ) = currchild[0];
-            // preN ode = currpreLink;
-            // if (lef t 6= preN ode) then // A category 3 node
-            // tryMark(curr, 0);
-            // CleanMark(curr, 0);
-            // else
-            // pDir =cmp(currk,prevk);
-            // if (lef t = curr) then
-            // CAS(prevchild[pDir], (curr , f, 0, 0), (right, 0, 0, rT ));
-            // if (!rT ) then CAS(rightbackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
-            // else
-            // CAS(preN odechild[1], (curr, 1, 0, 1), (right, 0, 0, rT ));
-            // if (!rT ) then CAS(rightbackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
-            // CAS(prevchild[pDir], (curr, 1, 0, 0), (preN ode, 0, 0, rT ));
-            // CAS(preN odebackLink, (curr, 0, 0, 0), (prev, 0, 0, 0));
-            // else if (rt and rF ) then
-            // // The node is moving to replace its successor
-            // delN ode = right;
-            // while true do
-            // parent = delN odebackLink;
-            // pDir =cmp(currk, prevk);
-            // (∗, pF, pM, pT ) = parentchild[pDir];
-            // if (pM ) then CleanMark(parent, pDir);
-            // else if (pF ) then break;
-            // else if (CAS(parentchild[pDir], (curr, 0, 0, 0), (curr, 1, 0, 0))) then
-            // break;
-            // backN ode = parentbackLink;
-            // CleanFlag(parent, curr, backN ode, true);
-            // // Try marking the child link.
-            // // Cleaning a flagged parent-link
-            // // The node is to be deleted itself
-            // // This is a category 1 or 2 node
-            // // A category 1 node
-            // // A category 2 node
+            // Cleaning a flagged parent-link
+            int[] rightStamp = new int[1];
+            int[] leftStamp = new int[1];
+            Node right = curr.getChild(1, rightStamp).getReference();
+            Node left;
+            Node preNode;
+
+            // The node is to be deleted itself
+            if ((rightStamp[0]&MARK) == MARK ) {
+                left = curr.getChild(0, leftStamp).getReference();
+                preNode = curr.getPreLink().getReference();
+
+                // A category 3 node
+                 if (left != preNode){
+                      tryMark(curr, 0);
+                      cleanMarked(curr, 0);
+                 }
+
+                // This is a category 1 or 2 node
+                 else {
+                     int pDir = cmp(curr.k,prev.k);
+
+                     // A category 1 node
+                     if (left == curr) {
+                         prev.childCAS(pDir, curr, FLAG, right, rightStamp[0]&THREAD);
+                         if( (rightStamp[0]&THREAD) != THREAD) right.backLinkCAS(curr, 0, prev, 0);
+                     }
+
+                    // A category 2 node
+                     else {
+                         preNode.childCAS(1, curr, FLAG+THREAD, right, rightStamp[0]&THREAD);
+                         if((rightStamp[0]&THREAD) != THREAD) right.backLinkCAS(curr, 0, prev, 0);
+                         prev.childCAS(pDir, curr, FLAG, preNode, rightStamp[0]&THREAD);
+                         preNode.backLinkCAS(curr, 0, prev, 0);
+                     }
+
+                }
+            }
+
+            // The node is moving to replace its successor
+            else if ( (rightStamp[0]&THREAD) == THREAD && (rightStamp[0]&FLAG) == FLAG ) {
+                Node delNode = right;
+                Node parent;
+
+                while(true) {
+                    int[] parentStamp = new int[1];
+                    parent = delNode.getBackLink().getReference();
+                    int pDir = cmp(curr.k, prev.k);
+
+                    Node temp = parent.getChild(pDir, parentStamp).getReference();
+
+                    if ( (parentStamp[0]&MARK) == MARK) cleanMarked(parent, pDir);
+
+                    else if ((parentStamp[0]&FLAG) == FLAG ) break;
+
+                    else if (parent.childCAS(pDir, curr, 0, curr, FLAG)) break;
+                }
+
+                Node backNode = parent.getBackLink().getReference();
+                cleanFlagged(parent, curr, backNode, true);
+            }
         }
-    }
+}
 
     public void cleanMarked(Node curr, int markDir) {
         int[] lStamp = new int[1];
