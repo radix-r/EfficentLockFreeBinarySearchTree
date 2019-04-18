@@ -36,6 +36,10 @@ public class Node {
         return this.child[dir].compareAndSet(initialRef, newRef, initialStamp, newStamp);
     }
 
+    public boolean backLinkCAS(Node initialRef, int initialStamp, Node newRef, int newStamp) {
+        return this.backLink.compareAndSet(initialRef, newRef, initialStamp, newStamp);
+    }
+
     public void setLeftChild(Node leftChild, int bit) {
         this.child[0].set(leftChild, bit);
     }
@@ -80,6 +84,11 @@ public class Node {
     public AtomicStampedReference<Node> getChild(int dir, int[] linkStamp ) {
         AtomicStampedReference<Node> ch =  this.child[dir];
         ch.get(linkStamp);
+        return ch;
+    }
+
+    public AtomicStampedReference<Node> getChild(int dir) {
+        AtomicStampedReference<Node> ch =  this.child[dir];
         return ch;
     }
 
