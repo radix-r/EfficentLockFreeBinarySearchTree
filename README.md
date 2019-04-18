@@ -7,11 +7,13 @@
 * Implement Efficient Lock-free Binary Search Tree
 
   * sub steps
-  * Cat 3 Remove() and Contains() - Ross
-  * Cat 1 + 2 Remove() and Add() - Chinh
-  * clean mark() - Chinh
+  * Cat 3 Remove() 
+  * ~~contains() - Ross~~
+  * Cat 1 + 2 Remove() - Chinh
+  * Add() - Chinh
+  * ~~clean mark() - Chinh~~
   * clean flag() - Chinh
-  * locate() - Ross
+  * ~~locate() - Ross~~
   * tryflag() - Ross
   * tryMark() - Ross
 

@@ -51,10 +51,10 @@ public class LockFreeBST  {
         root.getAndSet(1,rootMax);
     }
 
-    boolean Add(int key) {
+    boolean add(int key) {
         //  prev = &root[1]; curr = &root[0];
-        Node prev = root.get(0);
-        Node curr = root.get(1);
+        Node prev = root.get(1);
+        Node curr = root.get(0);
 
         /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
         Node node = new Node(key);
@@ -306,7 +306,7 @@ public class LockFreeBST  {
      * comparison to map results to indexes
      * 2 := equal, 1:= greater than, 0 := less than
      * */
-    private int cmp(int i, int j){
+    public static int cmp(int i, int j){
         int dir = Integer.compare(i,j);
 
         // remap dir to indexes
@@ -320,8 +320,16 @@ public class LockFreeBST  {
         }
         return dir;
     }
-    public boolean Contains(int key) {
-        return false;
+
+    public boolean contains(int key) {
+        Node prev = root.get(1);
+        Node curr = root.get(0);
+        int dir = locate(prev,curr,key);
+        if(dir == 2){
+            return true;
+        }else {
+            return false;
+        }
     }
 
     /**
@@ -354,16 +362,20 @@ public class LockFreeBST  {
                     continue;
                 }
                 if(t == THREAD){
-                    // check stoping criterion
-                    int nextE = curr.k;
+                    // check stopping criterion
+                    int nextE = next.k;
                     if (dir == 0 || key < nextE){
                         return dir;
                     }
+                    /*
                     else{
                         prev = curr;
                         curr = next;
-                    }
+                    }*/
                 }
+                // continue search
+                prev = curr;
+                curr = next;
 
 
             }
