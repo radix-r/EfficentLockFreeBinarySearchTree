@@ -31,7 +31,7 @@ public class Node {
     }
 
     // Takes in the direction(left or right child), initialRef, initialStamp, and newRef and newStamp
-    // and performes atomic comparedAndSet
+    // and performs atomic comparedAndSet
     public boolean childCAS(int dir, Node initialRef, int initialStamp, Node newRef, int newStamp) {
         return this.child[dir].compareAndSet(initialRef, newRef, initialStamp, newStamp);
     }
@@ -53,18 +53,38 @@ public class Node {
     }
 
 
-    public Node getBackLink() {
-        return this.backLink.getReference();
+    public AtomicStampedReference<Node> getBackLink() {
+        return this.backLink;
+    }
+
+
+
+    /**
+     * Returns parent and puts direction that this node is 0 for right 1 for left in pDir[0]
+     * */
+    public AtomicStampedReference<Node> getBackLink(int[] pDir) {
+        AtomicStampedReference<Node> parent = this.backLink;
+
+        int [] stampHolder = new int[1];
+        for(int i = 0; i<2;i++){
+            if(parent.getReference().getChild(i,stampHolder).getReference() == this){
+                pDir[0]=i;
+            }
+        }
+        return parent;
+
     }
 
     // Returns the Node reference of left or right child based on dir, 0 = left,
-    // 1 = right. and also put the stamped value into linkStamp in one atomic step
-    public Node getChild(int dir, int[] linkStamp ) {
-        return this.child[dir].get(linkStamp);
+    // 1 = right. and also put the stamped value into linkStamp[0] in one atomic step
+    public AtomicStampedReference<Node> getChild(int dir, int[] linkStamp ) {
+        AtomicStampedReference<Node> ch =  this.child[dir];
+        ch.get(linkStamp);
+        return ch;
     }
 
-    public Node getPreLink(){
-        return this.preLink.getReference();
+    public AtomicStampedReference<Node> getPreLink(){
+        return this.preLink;
     }
 
 
