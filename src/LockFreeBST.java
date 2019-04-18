@@ -426,57 +426,73 @@ public class LockFreeBST  {
         // // flag the order-link
         // result = tryFlag(curr, next, prev, true);
         // if (prevchild[dir].ref = curr) then
-        // CleanFlag(curr, next, prev, true);
+        // cleanFlagged(curr, next, prev, true);
 
 
         return result;
     }
 
-    public boolean tryFlag(Node prev, Node curr, Node backLink, boolean inThread) {
+    public boolean tryFlag(Node prev, Node curr, Node back, boolean isThread) {
 
-    //  while true do
-    //  pDir = cmp(currk, prevk) & 1;
-    //  // If cmp returns 2 then curr is the left link of prev; so pDir is changed to 0.
-    // // Try atomically flagging the parent link.
-    //  t = isThread;
-    //  result = CAS(prevchild[pDir], (curr, 0, 0, t), (curr, 1, 0, t));
-    //  if result then return true;
-    //  else
-    // /* The CAS fails, check if the link has been marked, flagged or the curr node got deleted. If flagged, return false; if
-    // marked, first clean it; else just proceed */
-    //  (newR, f, m, t) = prevchild[pDir];
-    //  if (newR = curr) then
-    //  if f then return false;
-    //  else if m then
-    //  cleanMarked(prev, pDir);
-    // prev = back;
-    // pDir =cmp(currk, prevk);
-    // newCurr = (prevchild[newP Dir])·ref ; locate(prev, newCurr, currk);
-    // if (newCurr 6=curr ) then
-    // return false;
-    //  back = prevbackLink;
+        while(true){
+            // If cmp returns 2 then curr is the left link of prev; so pDir is changed to 0.
+            int pDir = cmp(curr.k, prev.k) & 1;
 
-        return false;
+            // Try atomically flagging the parent link.
+            int t = isThread ? 1 : 0;
+            boolean result = prev.childCAS(pDir, curr, t, curr, FLAG+t);
+
+            if(result) return true;
+
+            else {
+                // /* The CAS fails, check if the link has been marked, flagged or the curr node got deleted. If flagged, return false; if
+                // marked, first clean it; else just proceed */
+                int [] newRStamp = new int[1];
+                Node newR = prev.getChild(pDir, newRStamp).getReference();
+
+                 if (newR == curr) {
+                    if( (newRStamp[0]&FLAG) == FLAG ) return false;
+
+                    else if ( (newRStamp[0]&MARK) == MARK ) {
+                         cleanMarked(prev, pDir);
+                    }
+
+                    prev = back;
+                    pDir = cmp(curr.k, prev.k);
+
+                    Node newCurr = prev.getChild(pDir).getReference();
+                    locate(prev, newCurr, curr.k);
+
+                    if (newCurr != curr ) return false;
+
+                    back = prev.getBackLink().getReference();
+                 }
+            }
+        }
     }
 
     public void tryMark(Node curr, int dir) {
-    // while true do
-    // back = currbackLink;
-    // (next, f, m, t) = currchild[dir];
-    // if (m == 1) then break;
-    // else if (f == 1) then
-    // if (t == 0) then
-    // CleanFlag(curr, next, back, false); continue;
-    // else if ((t == 1) and (dir == 1)) then
-    // CleanFlag(curr, next, back, true); continue;
-    // result = CAS(currchild[dir], (next, 0, 0, t), (next, 0, 1, t));
-    // if result then break;
+        while(true) {
+            Node back = curr.getBackLink().getReference();
+            int[] nextStamp = new int[1];
+            Node next = curr.getChild(dir, nextStamp).getReference();
 
+            if ((nextStamp[0]&MARK) == MARK) break;
+
+            else if ((nextStamp[0]&FLAG) == FLAG) {
+                if ((nextStamp[0]&THREAD) == 0) {
+                    cleanFlagged(curr, next, back, false); continue;
+                }
+
+                else if (((nextStamp[0]&THREAD) == THREAD) && (dir == 1)) {
+                    cleanFlagged(curr, next, back, true); continue;
+                }
+
+            }
+
+            // Try atomically marking the child link.
+            boolean result = curr.childCAS(dir, next, nextStamp[0]&THREAD, next, MARK+THREAD);
+            if (result) break;
+        }
     }
-
-
-
-
-
-
 }
