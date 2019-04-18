@@ -4,6 +4,17 @@ import org.junit.Test;
 
 public class LockFreeBSTTest {
 
+    public static void main( String[] args){
+        LockFreeBSTTest test = new LockFreeBSTTest();
+
+        System.out.println("Starting tests");
+        test.addTest();
+        test.cmpTest();
+        System.out.println("Tests finished");
+
+
+    }
+
     @Test
     public void addTest(){
         LockFreeBST bst = new LockFreeBST();
