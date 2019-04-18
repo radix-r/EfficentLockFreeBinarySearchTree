@@ -1,4 +1,7 @@
 import java.lang.Integer;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
 
 /*  BitWise Stamped
@@ -20,7 +23,8 @@ public class LockFreeBST  {
     private final int MARK = 2;
     private final int FLAG = 4;
 
-    private Node[] root;
+    //private Node[] root;
+    private AtomicReferenceArray<Node> root;
     private Node rootMin;
     private Node rootMax;
 
@@ -42,15 +46,15 @@ public class LockFreeBST  {
         rootMax.setBackLink(null, 0);
         rootMax.setPreLink(null, 0);
 
-        root = new Node[2];
-        root[0] = rootMin;
-        root[1] = rootMax;
+        root = new AtomicReferenceArray<Node>(2);
+        root.getAndSet(0,rootMin);
+        root.getAndSet(1,rootMax);
     }
 
     boolean Add(int key) {
         //  prev = &root[1]; curr = &root[0];
-        Node prev = root[0];
-        Node curr = root[1];
+        Node prev = root.get(0);
+        Node curr = root.get(1);
 
         /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
         Node node = new Node(key);
@@ -69,7 +73,7 @@ public class LockFreeBST  {
                 // Some temporary node R get the childs based on dir reference and all of the flag, mark, threaded bits
                 //  (R, ∗, ∗, ∗) = curr->child[dir];
                 int [] linkStamp = new int[1];
-                Node R = curr.getChild(dir, linkStamp);
+                Node R = curr.getChild(dir, linkStamp).getReference();
 
                 // /* The located link is threaded. Set the right-link of the adding node to copy this value */
                 //  nodechild[1] = (R, 0, 0, 1);
@@ -93,7 +97,7 @@ public class LockFreeBST  {
                      If marked or flagged, first help cleaning. */
                     // (newR, f, m, t) = currchild[dir];
                     int [] newLinkStamp = new int[1];
-                    Node newR = curr.getChild(dir, newLinkStamp);
+                    Node newR = curr.getChild(dir, newLinkStamp).getReference();
 
                     // compare references
                     if (newR == R) {
@@ -109,7 +113,7 @@ public class LockFreeBST  {
                         }
 
                         curr = newCurr;
-                        prev = newCurr.getBackLink();
+                        prev = newCurr.getBackLink().getReference();
                     }
 
                 }
@@ -193,19 +197,19 @@ public class LockFreeBST  {
 
     public void cleanMarked(Node curr, int markDir) {
         int[] lStamp = new int[1];
-        Node left = curr.getChild(0,lStamp);
+        Node left = curr.getChild(0,lStamp).getReference();
 
         int[] rStamp = new int[1];
-        Node right = curr.getChild(1,rStamp);
+        Node right = curr.getChild(1,rStamp).getReference();
 
         if (markDir == 1){
             /* the node is getting itself. if it is category 1 or 2 node, flag the incoming parent link; if it is a category 3
                 node, flag the incoming parent link of its predecessor*/
 
             while ( true ){
-                Node preNode = curr.getBackLink();
+                Node preNode = curr.getPreLink().getReference();
                 if (preNode.equals(left)){
-                    Node parent = curr.getBackLink();
+                    Node parent = curr.getBackLink().getReference();
                     // get which direction the child is
                     int pDir;
                     if (parent.getChild(0, new int[1]).equals(curr)){
@@ -216,15 +220,84 @@ public class LockFreeBST  {
 
 
 
-                    Node back = parent.getBackLink();
+                    Node back = parent.getBackLink().getReference();
                     tryFlag(parent,curr,back,true);
                     if (parent.getChild(pDir,new int[1]).equals(curr)){
                         cleanFlagged(parent,curr,back,true);
                         break;
                     }
-                    // pick up at line 132 in paper
+
+
+                } else{
+                    // Cat 3 node
+                    // get parent
+                    int[] pDir = new int[1];
+                    Node parent = curr.getBackLink(pDir).getReference();
+                    Node preParent = preNode.getBackLink().getReference();
+                    int[] linkStamp = new int[1];
+                    preParent.getChild(1,linkStamp);
+                    Node backNode = preParent.getBackLink().getReference();
+                    // check if link marked
+                    if((linkStamp[0]&MARK) == MARK){
+                        // if marked clean
+                        cleanMarked(preParent,1);
+                    }
+                    // Check if flagged
+                    else if((linkStamp[0]&FLAG)==FLAG){
+
+                        cleanFlagged(preParent,preNode,backNode,true);
+                        break;
+                    } // else try flag parent of order-node
+                    else if(parent.childCAS(pDir[0],curr,0,curr,FLAG)){
+
+                    }
 
                 }
+            }
+        } else{
+            // node is getting deleted or moved to replace its successor
+            if((rStamp[0]&MARK)==MARK){
+                // getting deleted. clean its left marked link
+                Node preNode = curr.getPreLink().getReference();
+                tryMark(preNode,0);
+                cleanMarked(preNode,0);
+            } else if ((rStamp[0]&(THREAD+FLAG))==(THREAD+FLAG)){
+                // move to replace successor. Change links accordingly
+                Node delNode = right;
+                // parent of node to delete ?
+                Node delNodePa = delNode.getBackLink().getReference();
+                int[] currDir = new int[1];
+                Node preParent = curr.getBackLink(currDir).getReference();
+                int pDir = cmp(delNode.k,delNodePa.k);
+
+                // get left and right children of delNode
+                int[] delNodeLStamp = new int[1];
+                Node delNodeL = delNode.getChild(0,delNodeLStamp).getReference();
+
+                int[] delNodeRStamp = new int[1];
+                Node delNodeR = delNode.getChild(1,delNodeRStamp).getReference();
+
+                int[] currStamp = new int[1];
+                preParent.getChild(currDir[0],currStamp);
+
+                // expect curr, *00
+                preParent.childCAS(1,curr,currStamp[0]&FLAG,left,lStamp[0]&(FLAG+THREAD));
+
+                if((lStamp[0]&THREAD)==0){
+                    left.getBackLink().compareAndSet(curr,preParent,0,0);
+                }
+
+                curr.childCAS(0,left,(MARK+(lStamp[0]&THREAD)), delNode,0);
+
+                delNode.getBackLink().compareAndSet(delNode,curr,0,0);
+
+                curr.childCAS(1,right,FLAG+THREAD,delNodeR,delNodeRStamp[0]&THREAD);
+
+                if((delNodeRStamp[0]&THREAD) != THREAD){
+                    delNodeR.getBackLink().compareAndSet(delNode,curr,0,0);
+                }
+                delNodePa.childCAS(pDir,delNode,FLAG,curr,0);
+                curr.getBackLink().compareAndSet(preParent,delNodePa,0,0);
             }
         }
     }
@@ -264,7 +337,7 @@ public class LockFreeBST  {
             }
             else{
                 int[] nextStamp = new int[1];
-                Node next = curr.getChild(dir,nextStamp);
+                Node next = curr.getChild(dir,nextStamp).getReference();
 
                 int m = nextStamp[0] & MARK;
                 int t = nextStamp[0] & THREAD;
@@ -272,12 +345,12 @@ public class LockFreeBST  {
 
                 if (m == MARK && dir == 1){
                     // remove the node?
-                    Node newPrev = prev.getBackLink();
+                    Node newPrev = prev.getBackLink().getReference();
                     cleanMarked(curr,dir);
                     prev= newPrev;
                     int pDir = cmp(key,prev.k);
                     int[] s = new int[1];
-                    curr = prev.getChild(pDir,s);
+                    curr = prev.getChild(pDir,s).getReference();
                     continue;
                 }
                 if(t == THREAD){
