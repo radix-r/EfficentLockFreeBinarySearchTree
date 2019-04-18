@@ -129,7 +129,8 @@ public class LockFreeBST  {
 
                 // if (marked)  break;
                 // else if (flagged) {
-                // // Help cleaning if right-child is flagged
+
+
                 // if (back = next) then
                 // // If back is getting deleted then move back.
                 // back = back->backLink;
