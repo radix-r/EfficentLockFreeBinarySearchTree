@@ -36,10 +36,6 @@ public class Node {
         return this.child[dir].compareAndSet(initialRef, newRef, initialStamp, newStamp);
     }
 
-    public boolean backLinkCAS(Node initialRef, int initialStamp, Node newRef, int newStamp) {
-        return this.backLink.compareAndSet(initialRef, newRef, initialStamp, newStamp);
-    }
-
     public void setLeftChild(Node leftChild, int bit) {
         this.child[0].set(leftChild, bit);
     }
@@ -52,13 +48,17 @@ public class Node {
         this.backLink.set(backLink, bit);
     }
 
+    public boolean casBacklink(Node initialRef, int initialStamp, Node newRef, int newStamp){
+        return this.backLink.compareAndSet(initialRef,newRef,initialStamp,newStamp);
+    }
+
     public void setPreLink(Node preLink, int bit) {
         this.preLink.set(preLink, bit);
     }
 
 
-    public AtomicStampedReference<Node> getBackLink() {
-        return this.backLink;
+    public Node getBackLink(int[] stampHolder) {
+        return this.backLink.get(stampHolder);
     }
 
 
@@ -66,12 +66,12 @@ public class Node {
     /**
      * Returns parent and puts direction that this node is 0 for right 1 for left in pDir[0]
      * */
-    public AtomicStampedReference<Node> getBackLink(int[] pDir) {
-        AtomicStampedReference<Node> parent = this.backLink;
+    public Node getBackLink(int[] stampHolder,int[] pDir) {
+        Node parent = this.backLink.getReference();
 
-        int [] stampHolder = new int[1];
+        //int [] stampHolder = new int[1];
         for(int i = 0; i<2;i++){
-            if(parent.getReference().getChild(i,stampHolder).getReference() == this){
+            if(parent.getChild(i,stampHolder) == this){
                 pDir[0]=i;
             }
         }
@@ -81,19 +81,13 @@ public class Node {
 
     // Returns the Node reference of left or right child based on dir, 0 = left,
     // 1 = right. and also put the stamped value into linkStamp[0] in one atomic step
-    public AtomicStampedReference<Node> getChild(int dir, int[] linkStamp ) {
-        AtomicStampedReference<Node> ch =  this.child[dir];
-        ch.get(linkStamp);
-        return ch;
+    public Node getChild(int dir, int[] linkStamp ) {
+        return this.child[dir].get(linkStamp);
+
     }
 
-    public AtomicStampedReference<Node> getChild(int dir) {
-        AtomicStampedReference<Node> ch =  this.child[dir];
-        return ch;
-    }
-
-    public AtomicStampedReference<Node> getPreLink(){
-        return this.preLink;
+    public Node getPreLink(int[] stampHolder){
+        return this.preLink.get(stampHolder);
     }
 
 
