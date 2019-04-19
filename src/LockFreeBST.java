@@ -160,7 +160,7 @@ public class LockFreeBST  {
                 else {
                     if (curr.getPreLink(new int[1]) != prev) curr.setPreLink(prev, 0); // I Worry about setting stamp to 0
                     // Try marking the child link.
-                    boolean result = curr.childCAS(1, next, linkStamp[0], next, linkStamp[0]+MARK);
+                    boolean result = curr.childCAS(1, next, linkStamp[0]&THREAD, next, (linkStamp[0]&THREAD)+MARK);
                     if(result) break;
                 }
             }
@@ -173,9 +173,9 @@ public class LockFreeBST  {
             // Cleaning a flagged parent-link
             int[] rightStamp = new int[1];
             int[] leftStamp = new int[1];
-            Node right = curr.getChild(1, rightStamp);
             Node left;
             Node preNode;
+            Node right = curr.getChild(1, rightStamp);
 
             // The node is to be deleted itself
             if ((rightStamp[0]&MARK) == MARK ) {
@@ -183,29 +183,28 @@ public class LockFreeBST  {
                 preNode = curr.getPreLink(new int[1]);
 
                 // A category 3 node
-                 if (left != preNode){
-                      tryMark(curr, 0);
-                      cleanMarked(curr, 0);
-                 }
+                if (left != preNode){
+                    tryMark(curr, 0);
+                    cleanMarked(curr, 0);
+                }
 
                 // This is a category 1 or 2 node
-                 else {
-                     int pDir = cmp(curr.k,prev.k);
+                else {
+                    int pDir = cmp(curr.k,prev.k);
 
-                     // A category 1 node
-                     if (left == curr) {
-                         prev.childCAS(pDir, curr, FLAG, right, rightStamp[0]&THREAD);
-                         if( (rightStamp[0]&THREAD) != THREAD) right.casBacklink(curr, 0, prev, 0);
-                     }
+                    // A category 1 node
+                    if (left == curr) {
+                        prev.childCAS(pDir, curr, FLAG, right, rightStamp[0]&THREAD);
+                        if( (rightStamp[0]&THREAD) != THREAD) right.casBacklink(curr, 0, prev, 0);
+                    }
 
                     // A category 2 node
-                     else {
-                         preNode.childCAS(1, curr, FLAG+THREAD, right, rightStamp[0]&THREAD);
-                         if((rightStamp[0]&THREAD) != THREAD) right.casBacklink(curr, 0, prev, 0);
-                         prev.childCAS(pDir, curr, FLAG, preNode, rightStamp[0]&THREAD);
-                         preNode.casBacklink(curr, 0, prev, 0);
-                     }
-
+                    else {
+                        preNode.childCAS(1, curr, FLAG+THREAD, right, rightStamp[0]&THREAD);
+                        if((rightStamp[0]&THREAD) != THREAD) right.casBacklink(curr, 0, prev, 0);
+                        prev.childCAS(pDir, curr, FLAG, preNode, rightStamp[0]&THREAD);
+                        preNode.casBacklink(curr, 0, prev, 0);
+                    }
                 }
             }
 
@@ -232,7 +231,7 @@ public class LockFreeBST  {
                 cleanFlagged(parent, curr, backNode, true);
             }
         }
-}
+    }
 
     public void cleanMarked(Node curr, int markDir) {
         int[] lStamp = new int[1];
@@ -565,7 +564,7 @@ public class LockFreeBST  {
 
                     Node newCurr = prev.getChild(pDir,new int[1]);
                     Node[] preCurr = new Node[]{prev,newCurr};
-                    //locate(prev, newCurr, curr.k);locate(preCurr, curr.k);
+                    locate(preCurr, curr.k);
                     prev = preCurr[0];
                     newCurr = preCurr[1];
 
@@ -579,8 +578,7 @@ public class LockFreeBST  {
 
     public void tryMark(Node curr, int dir) {
         while(true) {
-            int[] currBackStamp = new int[1];
-            Node back = curr.getBackLink(currBackStamp);
+            Node back = curr.getBackLink(new int[1]);
             int[] nextStamp = new int[1];
             Node next = curr.getChild(dir, nextStamp);
 
@@ -598,7 +596,7 @@ public class LockFreeBST  {
             }
 
             // Try atomically marking the child link.
-            boolean result = curr.childCAS(dir, next, nextStamp[0]&THREAD, next, MARK+THREAD);
+            boolean result = curr.childCAS(dir, next, nextStamp[0]&THREAD, next, MARK+(nextStamp[0]&THREAD));
             if (result) break;
         }
     }
