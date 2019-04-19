@@ -55,19 +55,22 @@ public class LockFreeBST  {
 
     boolean add(int key) {
         //  prev = &root[1]; curr = &root[0];
-        Node prev = root.get(1);
+        Node pre = root.get(1);
         Node curr = root.get(0);
 
-        Node[] prevCurr = new Node[]{prev,curr};
+
 
         /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
         Node node = new Node(key);
         node.setLeftChild(node, THREAD);
 
         while(true) {
+            Node[] preCurr = new Node[]{pre,curr};
 
-            // int dir = locate(prev, curr, key);
-            int dir = locate(prevCurr,key);
+            int dir = locate(preCurr,key);
+            pre = preCurr[0];
+            curr = preCurr[1];
+
 
             //  if (dir = 2) then key exists in the BST return false;
             if (dir == 2) {
@@ -106,7 +109,7 @@ public class LockFreeBST  {
 
                     // compare references
                     if (newR == R) {
-                        Node newCurr = prev;
+                        Node newCurr = pre;
 
                         // Bitwise comparision xx
                         if( newLinkStamp[0] == MARK ) {
@@ -114,11 +117,11 @@ public class LockFreeBST  {
                         }
 
                         else if ( newLinkStamp[0] == FLAG ) {
-                            cleanFlagged(curr, R, prev, true);
+                            cleanFlagged(curr, R, pre, true);
                         }
 
                         curr = newCurr;
-                        prev = newCurr.getBackLink(new int[1]);
+                        pre = newCurr.getBackLink(new int[1]);
                     }
 
                 }
@@ -362,9 +365,12 @@ public class LockFreeBST  {
     }
 
     public boolean contains(int key) {
-        Node prev = root.get(1);
+        Node pre = root.get(1);
         Node curr = root.get(0);
-        int dir = locate(prev,curr,key);
+        Node[] preCurr = new Node[]{pre,curr};
+        // int dir = locate(prev,curr,key);
+        int dir = locate(preCurr,key);
+
         if(dir == 2){
             return true;
         }else {
@@ -430,9 +436,9 @@ public class LockFreeBST  {
     /**
      * Locate returns 2 if key is found otherwise 0 or 1 if the last visited link is left or right respectively.
      * */
-    public int locate(Node prev, Node curr, int key){
+    public int locate(Node[] prevCurr, int key){
         while (true){
-            int dir = cmp(key,curr.k);
+            int dir = cmp(key,prevCurr[1].k);
 
             if (dir == 2){
                 // key found
@@ -440,7 +446,7 @@ public class LockFreeBST  {
             }
             else{
                 int[] nextStamp = new int[1];
-                Node next = curr.getChild(dir,nextStamp);
+                Node next = prevCurr[1].getChild(dir,nextStamp);
 
                 int m = nextStamp[0] & MARK;
                 int t = nextStamp[0] & THREAD;
@@ -448,12 +454,12 @@ public class LockFreeBST  {
 
                 if (m == MARK && dir == 1){
                     // remove the node?
-                    Node newPrev = prev.getBackLink(new int[1]);
-                    cleanMarked(curr,dir);
-                    prev= newPrev;
-                    int pDir = cmp(key,prev.k);
+                    Node newPrev = prevCurr[0].getBackLink(new int[1]);
+                    cleanMarked(prevCurr[1],dir);
+                    prevCurr[0]= newPrev;
+                    int pDir = cmp(key,prevCurr[0].k);
                     int[] s = new int[1];
-                    curr = prev.getChild(pDir,s);
+                    prevCurr[1] = prevCurr[0].getChild(pDir,s);
                     continue;
                 }
                 if(t == THREAD){
@@ -469,8 +475,8 @@ public class LockFreeBST  {
                     }*/
                 }
                 // continue search
-                prev = curr;
-                curr = next;
+                prevCurr[0] = prevCurr[1];
+                prevCurr[1] = next;
 
 
             }
@@ -493,9 +499,9 @@ public class LockFreeBST  {
         // find largest node less than k? I think so
         Node pred = findPred(key);
 
-        locate(prev, curr, key);
+        //locate(prev, curr, key);
 
-        int  dir = locate(prev, curr, pred.k); // wtf ????????
+        //int  dir = locate(prev, curr, pred.k); // wtf ????????
 
         //  (next, f, ∗, t) = currchild[dir];
 
@@ -542,7 +548,10 @@ public class LockFreeBST  {
 
 
                     Node newCurr = prev.getChild(pDir,new int[1]);
-                    locate(prev, newCurr, curr.k);
+                    Node[] preCurr = new Node[]{prev,newCurr};
+                    //locate(prev, newCurr, curr.k);locate(preCurr, curr.k);
+                    prev = preCurr[0];
+                    newCurr = preCurr[1];
 
                     if (newCurr != curr ) return false;
 
