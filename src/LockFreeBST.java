@@ -65,6 +65,7 @@ public class LockFreeBST  {
         node.setLeftChild(node, THREAD);
 
         while(true) {
+            // use array to pass by ref
             Node[] preCurr = new Node[]{pre,curr};
 
             int dir = locate(preCurr,key);
@@ -381,10 +382,11 @@ public class LockFreeBST  {
     /**
      * Returns the node whose threaded right pointer would point to the node with the value k
      * */
-    public Node findPred(int key){
+    public Node findPred(int key, int[] direction1, int[] direction2){
         /* Initialize the location variables as before. */
         Node prev = root.get(1);
         Node curr = root.get(0);
+
 
         while (true){
             int dir = cmp(key,curr.k);
@@ -393,7 +395,7 @@ public class LockFreeBST  {
                 // target found go left
                 dir = 0;
             }
-
+            direction1[0]=dir;
             int[] nextStamp = new int[1];
             Node next = curr.getChild(dir,nextStamp);
 
@@ -424,6 +426,7 @@ public class LockFreeBST  {
                 }*/
             }
             // continue search
+            direction2[0] = direction1[0];
             prev = curr;
             curr = next;
 
@@ -493,26 +496,39 @@ public class LockFreeBST  {
         boolean result = false;
 
         /* Initialize the location variables as before. */
-        Node prev = root.get(1);
+        Node pre = root.get(1);
         Node curr = root.get(0);
 
         // find largest node less than k? I think so
-        Node pred = findPred(key);
+        int[] dir1 = new int[1];
+        int[] dir2 = new int[]{-1};
+        Node pred = findPred(key, dir1,dir2);
 
-        //locate(prev, curr, key);
-
-        //int  dir = locate(prev, curr, pred.k); // wtf ????????
+        Node[] preCurr = new Node[]{pre,curr};
+        int  d = locate(preCurr, pred.k); // wtf ????????
+        pre = preCurr[0];
+        curr = preCurr[1];
 
         //  (next, f, ∗, t) = currchild[dir];
+        int[] nextStamp = new int[1];
 
-        //  if (k 6= nextk) then return false;
+        Node next = curr.getChild(dir1[0],nextStamp);
 
-        //  else
 
-        // // flag the order-link
-        // result = tryFlag(curr, next, prev, true);
-        // if (prevchild[dir].ref = curr) then
-        // cleanFlagged(curr, next, prev, true);
+
+        if (key != next.k) {
+            return false;
+        }else{
+            // flag the order-link
+            result = tryFlag(curr, next, pre, true);
+            if (pre.getChild(dir2[0],new int[1])==curr){
+                // if nodes still in same place attempt removal
+                cleanFlagged(curr, next, pre, true);
+            }
+
+        }
+
+
 
 
         return result;

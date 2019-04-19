@@ -11,6 +11,7 @@ public class LockFreeBSTTest {
         test.addTest();
         test.cmpTest();
         test.findPredTest();
+        test.removeTest();
         System.out.println("Tests finished");
 
 
@@ -93,10 +94,56 @@ public class LockFreeBSTTest {
         added = bst.add(-4);
 
         Node pre;
+        int[] dummy = new int[1];
 
         in = bst.contains(6);
-        pre = bst.findPred(10);
+        pre = bst.findPred(10,dummy,dummy);
         Assert.assertEquals("Pred of 10",9,pre.k);
+
+        pre = bst.findPred(1,dummy,dummy);
+        Assert.assertEquals("Pred of 1",-4,pre.k);
+
+        pre = bst.findPred(4,dummy,dummy);
+        Assert.assertEquals("Pred of 4",1,pre.k);
+
+        // test with vals not in tree
+        pre = bst.findPred(11,dummy,dummy);
+        Assert.assertEquals("Pred of 11",10,pre.k);
+
+        pre = bst.findPred(3, dummy,dummy);
+        Assert.assertEquals("Pred of 3",1,pre.k);
+
+        pre = bst.findPred(-6, dummy,dummy);
+        Assert.assertEquals("Pred of -6",-5,pre.k);
+    }
+
+    @Test
+    public void removeTest(){
+        LockFreeBST bst = new LockFreeBST();
+
+
+        boolean added;
+        boolean in;
+        boolean removed;
+
+        // populate tree
+        added = bst.add(4);
+        added = bst.add(1);
+        added = bst.add(10);
+        added = bst.add(6);
+
+        added = bst.add(5);
+        added = bst.add(9);
+        added = bst.add(-5);
+        added = bst.add(-4);
+
+        // attempt removal
+        in = bst.contains(6);
+        Assert.assertTrue("Contains 6", in);
+        removed = bst.remove(6);
+        Assert.assertTrue("Removed 6", removed);
+        in = bst.contains(6);
+        Assert.assertFalse("Contains 6", in);
 
 
 
