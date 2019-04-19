@@ -1,4 +1,6 @@
 import java.lang.Integer;
+import java.lang.ref.Reference;
+import java.sql.Ref;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicStampedReference;
@@ -56,13 +58,16 @@ public class LockFreeBST  {
         Node prev = root.get(1);
         Node curr = root.get(0);
 
+        Node[] prevCurr = new Node[]{prev,curr};
+
         /* Initializing a new node with supplied key and left-link threaded and pointing to itself.*/
         Node node = new Node(key);
         node.setLeftChild(node, THREAD);
 
         while(true) {
 
-            int dir = locate(prev, curr, key);
+            // int dir = locate(prev, curr, key);
+            int dir = locate(prevCurr,key);
 
             //  if (dir = 2) then key exists in the BST return false;
             if (dir == 2) {
@@ -368,7 +373,62 @@ public class LockFreeBST  {
     }
 
     /**
-     *
+     * Returns the node whose threaded right pointer would point to the node with the value k
+     * */
+    public Node findPred(int key){
+        /* Initialize the location variables as before. */
+        Node prev = root.get(1);
+        Node curr = root.get(0);
+
+        while (true){
+            int dir = cmp(key,curr.k);
+
+            if(dir == 2){
+                // target found go left
+                dir = 0;
+            }
+
+            int[] nextStamp = new int[1];
+            Node next = curr.getChild(dir,nextStamp);
+
+            int m = nextStamp[0] & MARK;
+            int t = nextStamp[0] & THREAD;
+
+
+            if (m == MARK && dir == 1){
+                // remove the node?
+                Node newPrev = prev.getBackLink(new int[1]);
+                cleanMarked(curr,dir);
+                prev= newPrev;
+                int pDir = cmp(key,prev.k);
+                int[] s = new int[1];
+                curr = prev.getChild(pDir,s);
+                continue;
+            }
+            if(t == THREAD){
+                // check stopping criterion
+                int nextE = next.k;
+                if (dir == 0 || key <= nextE){
+                    return curr;
+                }
+                /*
+                else{
+                    prev = curr;
+                    curr = next;
+                }*/
+            }
+            // continue search
+            prev = curr;
+            curr = next;
+
+
+
+        }
+
+    }
+
+    /**
+     * Locate returns 2 if key is found otherwise 0 or 1 if the last visited link is left or right respectively.
      * */
     public int locate(Node prev, Node curr, int key){
         while (true){
@@ -427,10 +487,15 @@ public class LockFreeBST  {
         boolean result = false;
 
         /* Initialize the location variables as before. */
-        //  Node prev = &root[1];
-        //  Node curr = &root[0];
+        Node prev = root.get(1);
+        Node curr = root.get(0);
 
-        //  int  dir = locate(prev, curr, k− e);????????
+        // find largest node less than k? I think so
+        Node pred = findPred(key);
+
+        locate(prev, curr, key);
+
+        int  dir = locate(prev, curr, pred.k); // wtf ????????
 
         //  (next, f, ∗, t) = currchild[dir];
 
