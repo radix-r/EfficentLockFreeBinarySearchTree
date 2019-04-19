@@ -1,8 +1,6 @@
 import org.deuce.Atomic;
 
 
-
-
 // This code is contributed by Ankur Narain Verma
 // Modified by Chinh Le and Ross Wagner to incorporate STMP using Deuce
 
@@ -36,6 +34,7 @@ public class STMBST {
         return contains(root.right, key);
     }
 
+    @Atomic
     void insert(int key) {
         root = insertRec(root, key);
     }
@@ -57,7 +56,6 @@ public class STMBST {
         return root;
     }
 
-    @Atomic
     Node insertNode(int key) {
         return new Node(key);
     }
@@ -138,5 +136,3 @@ public class STMBST {
         tree.inorder();
     }
 }
-
-

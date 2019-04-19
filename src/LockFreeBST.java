@@ -188,8 +188,9 @@ public class LockFreeBST  {
 
                 // A category 3 node
                  if (left != preNode){
-                      tryMark(curr, 0);
-                      Node[] currReff = new Node[]{curr};
+                     Node[] currReff = new Node[]{curr};
+                      tryMark(currReff, 0);
+
                       cleanMarked(currReff, 0);
                       curr = currReff[0];
                  }
@@ -242,7 +243,7 @@ public class LockFreeBST  {
                 cleanFlagged(parent, curr, backNode, true);
             }
         }
-}
+    }
 
     public void cleanMarked(Node[] curr, int markDir) {
         int[] lStamp = new int[1];
@@ -610,8 +611,7 @@ public class LockFreeBST  {
 
     public void tryMark(Node curr, int dir) {
         while(true) {
-            int[] currBackStamp = new int[1];
-            Node back = curr.getBackLink(currBackStamp);
+            Node back = curr.getBackLink(new int[1]);
             int[] nextStamp = new int[1];
             Node next = curr.getChild(dir, nextStamp);
 
@@ -629,7 +629,7 @@ public class LockFreeBST  {
             }
 
             // Try atomically marking the child link.
-            boolean result = curr.childCAS(dir, next, nextStamp[0]&THREAD, next, MARK+THREAD);
+            boolean result = curr.childCAS(dir, next, nextStamp[0]&THREAD, next, MARK+(nextStamp[0]&THREAD));
             if (result) break;
         }
     }
