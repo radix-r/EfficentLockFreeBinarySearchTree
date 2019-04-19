@@ -240,6 +240,12 @@ public class LockFreeBST  {
         int[] rStamp = new int[1];
         Node right = curr.getChild(1,rStamp);
 
+        int[] delStamp = new int[1];
+        Node delNode;
+
+        Node parent;
+        int pDir;
+
         if (markDir == 1){
             /* the node is getting itself. if it is category 1 or 2 node, flag the incoming parent link; if it is a category 3
                 node, flag the incoming parent link of its predecessor*/
@@ -248,17 +254,15 @@ public class LockFreeBST  {
                 int[] preStamp = new int[1];
                 Node preNode = curr.getPreLink(preStamp);
                 if (preNode.equals(left)){
-                    Node parent = curr.getBackLink(new int[1]);
+                    parent = curr.getBackLink(new int[1]);
+
+                    parent = curr.getBackLink(new int[1]);
                     // get which direction the child is
-                    int pDir;
                     if (parent.getChild(0, new int[1]).equals(curr)){
                         pDir = 0;
                     } else {
                         pDir=1;
                     }
-
-
-
                     Node back = parent.getBackLink(new int[1]);
                     tryFlag(parent,curr,back,true);
                     if (parent.getChild(pDir,new int[1]).equals(curr)){
@@ -270,15 +274,20 @@ public class LockFreeBST  {
                 } else{
                     // Cat 3 node
                     // get parent
-                    int[] pDir = new int[1];
+                    int[] pDir1 = new int[1];
                     int[] curBackStamp = new int[1];
-                    Node parent = curr.getBackLink(curBackStamp,pDir);
+                    parent = curr.getBackLink(curBackStamp,pDir1);
+
+
                     int[] preBackStamp = new int[1];
                     Node preParent = preNode.getBackLink(preBackStamp);
+
                     int[] linkStamp = new int[1];
                     preParent.getChild(1,linkStamp);
+
                     int[] preParBackStamp = new int[1];
                     Node backNode = preParent.getBackLink(preParBackStamp);
+
                     // check if link marked
                     if((linkStamp[0]&MARK) == MARK){
                         // if marked clean
@@ -290,8 +299,9 @@ public class LockFreeBST  {
                         cleanFlagged(preParent,preNode,backNode,true);
                         break;
                     } // else try flag parent of order-node
-                    else if(parent.childCAS(pDir[0],curr,0,curr,FLAG)){
-
+                    else if(parent.childCAS(pDir1[0],curr,0,curr,FLAG)){
+                        cleanFlagged(preParent,preNode,backNode,true);
+                        break;
                     }
 
                 }
@@ -306,12 +316,12 @@ public class LockFreeBST  {
                 cleanMarked(preNode,0);
             } else if ((rStamp[0]&(THREAD+FLAG))==(THREAD+FLAG)){
                 // move to replace successor. Change links accordingly
-                Node delNode = right;
+                delNode = right;
                 // parent of node to delete ?
                 Node delNodePa = delNode.getBackLink(new int[1]);
                 int[] currDir = new int[1];
                 Node preParent = curr.getBackLink(currDir);
-                int pDir = cmp(delNode.k,delNodePa.k);
+                pDir = cmp(delNode.k,delNodePa.k);
 
                 // get left and right children of delNode
                 int[] delNodeLStamp = new int[1];
@@ -321,7 +331,7 @@ public class LockFreeBST  {
                 Node delNodeR = delNode.getChild(1,delNodeRStamp);
 
                 int[] currStamp = new int[1];
-                preParent.getChild(currDir[0],currStamp);
+                preParent.getChild(1,currStamp);
 
                 // expect curr, *00
                 preParent.childCAS(1,curr,currStamp[0]&FLAG,left,lStamp[0]&(FLAG+THREAD));
@@ -330,9 +340,9 @@ public class LockFreeBST  {
                     left.casBacklink(curr,0,preParent,0);
                 }
 
-                curr.childCAS(0,left,(MARK+(lStamp[0]&THREAD)), delNode,0);
+                curr.childCAS(0,left,(MARK+(lStamp[0]&THREAD)), delNodeL,0);
 
-                delNode.casBacklink(delNode,0,curr,0);
+                delNodeL.casBacklink(delNode,0,curr,0);
 
                 curr.childCAS(1,right,FLAG+THREAD,delNodeR,delNodeRStamp[0]&THREAD);
 
