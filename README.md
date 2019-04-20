@@ -34,8 +34,8 @@ sub steps
 ## Run test cases 
 
 1) Navigate to compiled output where *.class files are 
-2) run `java -cp .:<path to junit-410.jar> org.junit.runner.JUnitCore LockFreeBSTTest`
-    * ex: `java -cp .:../../../lib/junit-4.10.jar org.junit.runner.JUnitCore LockFreeBSTTest`
+2) run `java -cp .:<path to junit-410.jar> org.junit.runner.JUnitCore BSTTester`
+    * ex: `java -cp .:../../../lib/junit-4.10.jar org.junit.runner.JUnitCore BSTTester`
 3) will output something like: 
 
         JUnit version 4.10
@@ -47,4 +47,4 @@ sub steps
         
 No other output means that the tests ran successfully
 
-Test source code can be found in: LockFreeBSTTest.java
+Test source code can be found in: BSTTester.java

@@ -189,10 +189,10 @@ public class LockFreeBST  {
                 // A category 3 node
                  if (left != preNode){
                      Node[] currReff = new Node[]{curr};
-                      tryMark(currReff, 0);
+                     tryMark(currReff, 0);
 
-                      cleanMarked(currReff, 0);
-                      curr = currReff[0];
+                     cleanMarked(currReff, 0);
+                     curr = currReff[0];
                  }
 
                 // This is a category 1 or 2 node
@@ -320,8 +320,9 @@ public class LockFreeBST  {
                 // getting deleted. clean its left marked link
                 int[] preStamp = new int[1];
                 Node preNode = curr[0].getPreLink(preStamp);
-                tryMark(preNode,0);
                 Node[] preNodeRef = new Node[]{preNode};
+                tryMark(preNodeRef,0);
+
                 cleanMarked(preNodeRef,0);
                 preNode = preNodeRef[0];
             } else if ((rStamp[0]&(THREAD+FLAG))==(THREAD+FLAG)){
@@ -609,27 +610,27 @@ public class LockFreeBST  {
         }
     }
 
-    public void tryMark(Node curr, int dir) {
+    public void tryMark(Node[] curr, int dir) {
         while(true) {
-            Node back = curr.getBackLink(new int[1]);
+            Node back = curr[0].getBackLink(new int[1]);
             int[] nextStamp = new int[1];
-            Node next = curr.getChild(dir, nextStamp);
+            Node next = curr[0].getChild(dir, nextStamp);
 
             if ((nextStamp[0]&MARK) == MARK) break;
 
             else if ((nextStamp[0]&FLAG) == FLAG) {
                 if ((nextStamp[0]&THREAD) == 0) {
-                    cleanFlagged(curr, next, back, false); continue;
+                    cleanFlagged(curr[0], next, back, false); continue;
                 }
 
                 else if (((nextStamp[0]&THREAD) == THREAD) && (dir == 1)) {
-                    cleanFlagged(curr, next, back, true); continue;
+                    cleanFlagged(curr[0], next, back, true); continue;
                 }
 
             }
 
             // Try atomically marking the child link.
-            boolean result = curr.childCAS(dir, next, nextStamp[0]&THREAD, next, MARK+(nextStamp[0]&THREAD));
+            boolean result = curr[0].childCAS(dir, next, nextStamp[0]&THREAD, next, MARK+(nextStamp[0]&THREAD));
             if (result) break;
         }
     }
