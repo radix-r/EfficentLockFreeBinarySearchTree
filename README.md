@@ -1,5 +1,14 @@
 # Overview 
 
+Made using java 11.0.2
+
+#### Dependencies
+* deuceAgent-1.3.0.jar
+* hamcrest-all-1.3.jar
+* jcommon-1.0.23.jar
+* jfreechart-1.0.19.jar
+* junit-4.10.jar
+
 ## compiling
 
 1) Navigate to src folder
