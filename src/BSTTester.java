@@ -2,18 +2,34 @@ import org.junit.Assert;
 import org.junit.Test;
 
 
-public class LockFreeBSTTest {
+public class BSTTester {
 
     public static void main( String[] args){
-        LockFreeBSTTest test = new LockFreeBSTTest();
+
+        BSTTester test = new BSTTester();
 
         System.out.println("Starting tests");
         test.addTest();
         test.cmpTest();
         test.findPredTest();
-        test.removeTest();
+        // test.removeTest();
         System.out.println("Tests finished");
 
+        test = new BSTTester();
+        STMBST stmTest = new STMBST();
+        BST bst = new BST();
+
+        // Throughput testing
+
+
+
+        // add
+
+
+
+        // contains
+
+        // remove
 
     }
 
