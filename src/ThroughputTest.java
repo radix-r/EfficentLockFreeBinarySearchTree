@@ -29,15 +29,15 @@ public class ThroughputTest {
         ch1.setVisible(true);
 
         // contains
-        //dataSets = containsTest(TIMES_TO_AVG);
+        dataSets = containsTest(TIMES_TO_AVG);
         // graph
-        /*
-        title = "Contains Throughput";
+
+        title = "50-50 Contains-Add Throughput";
         MultipleLinesChart ch2 = new MultipleLinesChart(title,title,dataSets);
-        ch1.pack();
-        RefineryUtilities.centerFrameOnScreen(ch1);
-        ch1.setVisible(true);
-        */
+        ch2.pack();
+        RefineryUtilities.centerFrameOnScreen(ch2);
+        ch2.setVisible(true);
+
         // remove
 
 
@@ -152,9 +152,6 @@ public class ThroughputTest {
 
                 LockFreeBST lf = new LockFreeBST();
 
-
-
-
                 // time add funcs
                 // limit thread count
                 pool = Executors.newFixedThreadPool(i);
@@ -165,6 +162,7 @@ public class ThroughputTest {
 
                 for(int th = 0; th < 16; th++){
                     pool.execute(new lfAdd(lf,TIMES_TO_RUN));
+                    pool.execute(new lfContains(lf,TIMES_TO_RUN));
                 }
 
                 pool.shutdown();
@@ -193,8 +191,9 @@ public class ThroughputTest {
                 // start timer
                 startTime = System.nanoTime();
 
-                for(int th = 0; th < 32; th++){
+                for(int th = 0; th < 16; th++){
                     pool.execute(new stmAdd(stm,TIMES_TO_RUN));
+                    pool.execute(new stmContains(stm,TIMES_TO_RUN));
                 }
 
                 pool.shutdown();
@@ -207,13 +206,6 @@ public class ThroughputTest {
             throughput = (numOps*1000000)/duration; // throughput in ops per milli sec
             stmData.add(new long[]{(long)i,throughput});
 
-            duration = 0;
-
-
-
-
-
-
         }
         dataSets.put("LF", lfData);
         dataSets.put("STM",stmData);
@@ -221,25 +213,6 @@ public class ThroughputTest {
 
     }
 
-
-    static class bstAdd implements Runnable{
-        BST bst;
-        int n;
-
-        bstAdd(BST bst,int n){
-            this.n = n;
-            this.bst = bst;
-        }
-
-        private void addNTimes(int n){
-            for(int i = 0; i<n;i++){
-                bst.insert(i);
-            }
-        }
-        public void run(){
-            addNTimes(n);
-        }
-    }
 
     static class lfAdd implements Runnable{
         int n;
@@ -263,6 +236,28 @@ public class ThroughputTest {
 
     }
 
+    static class lfContains implements Runnable{
+        int n;
+        LockFreeBST lf;
+        SplittableRandom rand = new SplittableRandom();
+
+        lfContains(LockFreeBST lf, int n){
+            this.lf=lf;
+            this.n = n;
+        }
+
+        void containsNTimes(int n){
+            for(int i =0; i<n; i++){
+                lf.contains(rand.nextInt());
+            }
+        }
+
+        public void run(){
+            containsNTimes(n);
+        }
+
+    }
+
     static class stmAdd implements Runnable{
         int n;
         STMBST stm;
@@ -281,6 +276,27 @@ public class ThroughputTest {
 
         public void run(){
             addNTimes(n);
+        }
+    }
+
+    static class stmContains implements Runnable{
+        int n;
+        STMBST stm;
+        SplittableRandom rand = new SplittableRandom();
+
+        stmContains(STMBST stm,int n){
+            this.n = n;
+            this.stm = stm;
+        }
+
+        void containsNTimes(int n){
+            for(int i = 0; i<n;i++){
+                stm.contains(stm.root,rand.nextInt());
+            }
+        }
+
+        public void run(){
+            containsNTimes(n);
         }
     }
 

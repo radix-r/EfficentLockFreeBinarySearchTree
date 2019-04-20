@@ -21,7 +21,9 @@ Made using java 11.0.2
 
 2) run (from src) `java -cp .:../lib/junit-4.10.jar:../lib/deuceAgent-1.3.0.jar:../lib/jfreechart-1.0.19.jar:../lib/jcommon-1.0.23.jar ThroughputTest`
 
-It may take a minuet or two to generate the graph.  
+It may take a minuet or two to generate the graph. 
+
+The Charts are displayed then saved as *Throughput.png  
 
 ## Run correctness test cases 
 

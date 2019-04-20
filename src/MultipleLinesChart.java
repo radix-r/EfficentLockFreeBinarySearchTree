@@ -54,7 +54,7 @@ public class MultipleLinesChart extends JFrame {
         customizeChart(chart);
 
         // saves the chart as an image files
-        File imageFile = new File("XYLineChart.png");
+        File imageFile = new File(String.format("%s.png", chartTitle));
         int width = 640;
         int height = 480;
 
